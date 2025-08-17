@@ -1,0 +1,216 @@
+name: Build Python 3.12 for iOS (arm64) and package .deb
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          brew update
+          brew install dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
+
+      - name: Set up Python 3.12 for host build
+        id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build Python 3.12 for iOS and package .deb
+        env:
+          PY_VER: 3.12.5
+          LIBFFI_VER: 3.4.4
+          MIN_IOS: 12.0
+          OPENSSL_BRANCH: OpenSSL_1_1_1-stable
+        run: |
+          set -euxo pipefail
+
+          JOBS="$(sysctl -n hw.ncpu)"
+          WORKDIR="$PWD/work"
+          DEPS="$WORKDIR/deps"
+          BUILD="$WORKDIR/build"
+          STAGE="$WORKDIR/stage"
+          mkdir -p "$DEPS" "$BUILD" "$STAGE"
+
+          IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          CC="$(xcrun --sdk iphoneos -f clang)"
+          CXX="$(xcrun --sdk iphoneos -f clang++)"
+          AR="$(xcrun --sdk iphoneos -f ar)"
+          RANLIB="$(xcrun --sdk iphoneos -f ranlib)"
+          STRIP="$(xcrun --sdk iphoneos -f strip)"
+          HOST_TRIPLE="aarch64-apple-darwin"
+
+          export CFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS} -fPIC"
+          export LDFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS}"
+
+          # 1) OpenSSL 1.1.1 (stable)
+          cd "$DEPS"
+          git clone --depth 1 --branch "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git "openssl-${OPENSSL_BRANCH}"
+          cd "openssl-${OPENSSL_BRANCH}"
+          export CROSS_TOP="$(xcrun --sdk iphoneos --show-sdk-platform-path)/Developer"
+          export CROSS_SDK="$(basename "${IOS_SDK}")"
+          ./Configure ios64-cross no-tests no-shared --prefix=/usr/local
+          make -j"${JOBS}"
+          make install_sw DESTDIR="$DEPS/openssl-ios"
+
+          # 2) libffi (static)
+          cd "$DEPS"
+          curl -LO "https://github.com/libffi/libffi/releases/download/v${LIBFFI_VER}/libffi-${LIBFFI_VER}.tar.gz"
+          tar xf "libffi-${LIBFFI_VER}.tar.gz"
+          cd "libffi-${LIBFFI_VER}"
+          ./configure --host="${HOST_TRIPLE}" --prefix=/usr/local --disable-shared --enable-static \
+            CC="${CC} -arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS}" \
+            CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+          make -j"${JOBS}"
+          make install DESTDIR="$DEPS/libffi-ios"
+
+          export PKG_CONFIG_PATH="$DEPS/libffi-ios/usr/local/lib/pkgconfig:$DEPS/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+
+          # 3) Python 3.12 (auto-patch configure guard safely)
+          cd "$BUILD"
+          curl -LO "https://www.python.org/ftp/python/${PY_VER}/Python-${PY_VER}.tgz"
+          tar xf "Python-${PY_VER}.tgz"
+          cd "Python-${PY_VER}"
+
+          # Disable NIS on iOS to avoid rpcsvc/yp_prot.h
+          cat > Modules/Setup.local <<'EOF'
+          *disabled*
+          nis
+          EOF
+
+          # Refresh triplet recognition
+          curl -sSLo config.sub  https://git.savannah.gnu.org/cgit/config.git/plain/config.sub
+          curl -sSLo config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess
+          chmod +x config.sub config.guess
+
+          # Replace ONLY the guard line; preserve surrounding if/case to avoid 'fi' syntax errors
+          cp configure configure.orig
+          /usr/local/bin/gsed -ri 's/^[[:space:]]*as_fn_error[^\n]*cross build not supported[^\n]*$/  : # allow iOS cross build for $host/' configure
+          grep -n 'cross build not supported' configure || true
+
+          # Cross-compile cache
+          cat > config.site <<'EOF'
+          # Files
+          ac_cv_file__dev_ptc=no
+          ac_cv_file__dev_ptmx=no
+          
+          # Functions that are problematic or unavailable on iOS
+          ac_cv_func_system=no
+          ac_cv_func_pipe2=no
+          ac_cv_func_forkpty=no
+          ac_cv_func_openpty=no
+          
+          # Avoid other cross-run checks
+          ac_cv_func_sendfile=no
+          ac_cv_func_preadv=no
+          ac_cv_func_pwritev=no
+          ac_cv_func_getentropy=no
+          ac_cv_func_utimensat=no
+          ac_cv_func_posix_fallocate=no
+          ac_cv_func_clock_settime=no
+
+          # Disable NIS (nis module) on iOS
+          ac_cv_header_rpcsvc_yp_prot_h=no
+          ac_cv_header_rpcsvc_ypclnt_h=no
+          ac_cv_header_rpcsvc_rpcsvc_h=no
+          ac_cv_func_yp_get_default_domain=no
+          ac_cv_lib_nsl_yp_get_default_domain=no
+          ac_cv_have_nis=no
+          
+          # IPv6/getaddrinfo (keep enabled)
+          ac_cv_func_getaddrinfo=yes
+          ac_cv_working_getaddrinfo=yes
+          ac_cv_buggy_getaddrinfo=no
+          ac_cv_func_getnameinfo=yes
+          EOF
+          export CONFIG_SITE="$PWD/config.site"
+
+          export CPPFLAGS="-I$DEPS/openssl-ios/usr/local/include -I$DEPS/libffi-ios/usr/local/include"
+          export LDFLAGS="-L$DEPS/openssl-ios/usr/local/lib -L$DEPS/libffi-ios/usr/local/lib ${LDFLAGS}"
+          export LIBS="-lssl -lcrypto"
+          export PYTHON_FOR_BUILD="${{ steps.py.outputs.python-path }}"
+          
+          # Ensure shared modules link with clang (not ld)
+          export LD="$CC"
+          export LDSHARED="$CC -bundle -undefined dynamic_lookup $LDFLAGS"
+          export LDCXXSHARED="$CXX -bundle -undefined dynamic_lookup $LDFLAGS"
+          
+          ./configure \
+            --host="${HOST_TRIPLE}" \
+            --build="$(uname -m)-apple-darwin" \
+            --prefix=/usr/local \
+            --with-build-python="${{ steps.py.outputs.python-path }}" \
+            --with-openssl="$DEPS/openssl-ios/usr/local" \
+            --with-ensurepip=install \
+            --disable-test-modules
+
+          # Skip checksharedmods (host can't import arm64 .so during cross-compile)
+          awk 'BEGIN{skip=0}
+            /^checksharedmods:/{print "checksharedmods:\n\t@true"; skip=1; next}
+            skip && (/^\t/ || /^[[:space:]]*$/){next}
+            skip {skip=0}
+            {print}
+          ' Makefile > Makefile.new && mv Makefile.new Makefile
+
+          make -j"${JOBS}"
+          make install ENSUREPIP=no DESTDIR="$STAGE"
+
+          # Symlinks
+          ln -sf python3.12 "$STAGE/usr/local/bin/python3" || true
+          ln -sf python3.12 "$STAGE/usr/local/bin/python" || true
+          ln -sf pip3.12 "$STAGE/usr/local/bin/pip3" || true
+          ln -sf pip3.12 "$STAGE/usr/local/bin/pip" || true
+
+          # Sign binaries and loadables
+          while IFS= read -r -d '' f; do
+            if file -b "$f" | grep -q 'Mach-O'; then
+              ldid -S "$f" || echo "ldid warning on $f" >&2
+            fi
+          done < <(find "$STAGE" -type f \( -name "*.dylib" -o -name "*.so" -o -path "$STAGE/usr/local/bin/*" \) -print0)
+          # find "$STAGE" -type f \( -perm -111 -o -name "*.dylib" -o -name "*.so" \) -print0 | xargs -0 -I{} ldid -S {}
+
+          # 4) .deb packaging
+          PKGROOT="$WORKDIR/pkgroot"
+          mkdir -p "$PKGROOT/DEBIAN"
+          mv "$STAGE/usr" "$PKGROOT/usr"
+          INSTALLED_SIZE="$(du -sk "$PKGROOT/usr" | awk '{print $1}')"
+          cat > "$PKGROOT/DEBIAN/control" <<CTRL
+          Package: com.k1tty-xz.python3.12
+          Name: Python 3.12 for iOS (arm64)
+          Version: ${PY_VER}-1
+          Section: Development
+          Priority: optional
+          Architecture: iphoneos-arm
+          Maintainer: k1tty-xz
+          Installed-Size: ${INSTALLED_SIZE}
+          Description: CPython ${PY_VER} for jailbroken iOS (arm64).
+           Includes OpenSSL (ssl), ctypes, and pip.
+          Icon: https://k1tty-xz.github.io/icons/python3.png
+          CTRL
+
+          cat > "$PKGROOT/DEBIAN/postinst" <<'POST'
+          #!/bin/sh
+          set -e
+          ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3 || true
+          ln -sf /usr/local/bin/python3.12 /usr/local/bin/python || true
+          ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3 || true
+          ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip || true
+          exit 0
+          POST
+          chmod 0755 "$PKGROOT/DEBIAN/postinst"
+
+          OUTPUT="python3.12_${PY_VER}-1_iphoneos-arm.deb"
+          dpkg-deb --build --root-owner-group "$PKGROOT" "$WORKDIR/$OUTPUT"
+          echo "Built: $WORKDIR/$OUTPUT"
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python3.12_iphoneos-arm
+          path: work/python3.12_*_iphoneos-arm.deb
