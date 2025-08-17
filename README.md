@@ -1,10 +1,11 @@
-# Python 3.12 for iOS (arm64) rootful
+# <img src="logo.png" alt="Logo" width="40" style="vertical-align: middle; margin-right: 8px;"> Python 3.12 for iOS (arm64) rootful
 
 ![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64-deb/actions/workflows/python3.12-ios-arm64.yml/badge.svg)  
 ![Version](https://img.shields.io/badge/Python-3.12.5-blue.svg)  
 ![Platform](https://img.shields.io/badge/Platform-iOS%2012.0+-lightgrey.svg)  
 ![License](https://img.shields.io/badge/License-MIT-green.svg)  
 [![Contributions Welcome](https://img.shields.io/badge/Contributions-welcome-brightgreen.svg)](https://github.com/Tamior930/python3.12-ios-arm64/pulls)  
+
 
 Python **3.12.5** for jailbroken iOS (arm64), packaged as a Debian `.deb` and built automatically with GitHub Actions.  
 
