@@ -19,7 +19,7 @@ BUILD="$WORKDIR/build"
 STAGE="$WORKDIR/stage"
 mkdir -p "$DEPS" "$BUILD" "$STAGE"
 
-# Xcode toolchain / target
+# Xcode toolchain / target (shell variables, not exported)
 IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
 CC="$(xcrun --sdk iphoneos -f clang)"
 CXX="$(xcrun --sdk iphoneos -f clang++)"
@@ -32,6 +32,6 @@ HOST_TRIPLE="aarch64-apple-darwin"
 export CFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS} -fPIC"
 export LDFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS}"
 
-# Export for child scripts
-export JOBS WORKDIR DEPS BUILD STAGE IOS_SDK CC CXX AR RANLIB STRIP HOST_TRIPLE
+# Export only general/env vars (match original inline behavior for tool vars)
+export JOBS WORKDIR DEPS BUILD STAGE IOS_SDK HOST_TRIPLE
 

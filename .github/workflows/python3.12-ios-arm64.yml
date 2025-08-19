@@ -42,6 +42,9 @@ jobs:
           OPENSSL_BRANCH: OpenSSL_1_1_1-stable
         run: |
           set -euxo pipefail
+          # Ensure identical env scope as original inline block
+          source scripts/common-env.sh
+
           # 1) OpenSSL 1.1.1 (stable)
           bash scripts/build-openssl.sh
 

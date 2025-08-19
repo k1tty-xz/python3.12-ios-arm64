@@ -60,6 +60,9 @@ ac_cv_func_getaddrinfo=yes
 ac_cv_working_getaddrinfo=yes
 ac_cv_buggy_getaddrinfo=no
 ac_cv_func_getnameinfo=yes
+
+# Sizes (cross-compile cache)
+ac_cv_sizeof_long_double=8
 EOF
 export CONFIG_SITE="$PWD/config.site"
 
