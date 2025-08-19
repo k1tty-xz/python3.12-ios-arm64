@@ -1,9 +1,3 @@
-# ==============================================================================
-# CI Workflow: Build Python 3.12 for iOS (arm64) and package .deb
-#
-# Style: Organized sections with comments; actual build logic delegated to
-# scripts/ via Makefile targets to keep behavior identical and YAML concise.
-# ==============================================================================
 name: Build Python 3.12 for iOS (arm64) and package .deb
 
 on:
@@ -13,54 +7,58 @@ jobs:
   build:
     runs-on: macos-13
 
-    # Versions and options (identical to inline env)
-    env:
-      PY_VER: 3.12.5
-      LIBFFI_VER: 3.4.4
-      MIN_IOS: 12.0
-      OPENSSL_BRANCH: OpenSSL_1_1_1-stable
-
     steps:
-      # ------------------------------------------------------------------------
-      # 0) Source Checkout
-      # ------------------------------------------------------------------------
-      - name: Checkout repository
+      # ---------------------------------------------
+      # Checkout repository
+      # ---------------------------------------------
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ------------------------------------------------------------------------
-      # 1) Host Toolchain Setup
-      # ------------------------------------------------------------------------
+      # ---------------------------------------------
+      # Install required build tools via Homebrew
+      # ---------------------------------------------
       - name: Install build tools
         run: |
-          brew update
-          brew install dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
+          bash scripts/install-build-tools.sh
 
+      # ---------------------------------------------
+      # Prepare host Python 3.12 used by CPython's build
+      # ---------------------------------------------
       - name: Set up Python 3.12 for host build
         id: py
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      # ------------------------------------------------------------------------
-      # 2) Build (deps + CPython) using repository scripts
-      # ------------------------------------------------------------------------
-      - name: Build dependencies (OpenSSL, libffi)
-        run: make deps
-
-      - name: Build CPython 3.12 for iOS (arm64)
+      # ---------------------------------------------
+      # Build dependencies and CPython, then package .deb
+      # (Behavior identical to previous inline script)
+      # ---------------------------------------------
+      - name: Build Python 3.12 for iOS and package .deb
         env:
-          PYTHON_FOR_BUILD: ${{ steps.py.outputs.python-path }}
-        run: make python
+          PY_VER: 3.12.5
+          LIBFFI_VER: 3.4.4
+          MIN_IOS: 12.0
+          OPENSSL_BRANCH: OpenSSL_1_1_1-stable
+        run: |
+          set -euxo pipefail
+          # 1) OpenSSL 1.1.1 (stable)
+          bash scripts/build-openssl.sh
 
-      # ------------------------------------------------------------------------
-      # 3) Package as Debian .deb (mirrors inline packaging exactly)
-      # ------------------------------------------------------------------------
-      - name: Package .deb
-        run: make package
+          # 2) libffi (static)
+          bash scripts/build-libffi.sh
+          # Ensure PKG_CONFIG_PATH is set in parent shell exactly as original
+          export PKG_CONFIG_PATH="work/deps/libffi-ios/usr/local/lib/pkgconfig:work/deps/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
-      # ------------------------------------------------------------------------
-      # 4) Publish artifact
-      # ------------------------------------------------------------------------
+          # 3) CPython 3.12 build and stage (pass host python explicitly)
+          PYTHON_FOR_BUILD="${{ steps.py.outputs.python-path }}" bash scripts/build-python.sh
+
+          # 4) .deb packaging
+          bash scripts/package-dpkg.sh
+
+      # ---------------------------------------------
+      # Upload artifact (.deb)
+      # ---------------------------------------------
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
         with:
