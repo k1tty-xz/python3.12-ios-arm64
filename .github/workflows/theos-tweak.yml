@@ -19,8 +19,16 @@ jobs:
           brew update
           brew install dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
 
+      - name: Set up Python 3.12 for host build
+        id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       # Build Python runtime (deps + CPython) using repo Makefile
       - name: Build Python runtime (OpenSSL, libffi, CPython)
+        env:
+          PYTHON_FOR_BUILD: ${{ steps.py.outputs.python-path }}
         run: |
           make deps
           make python

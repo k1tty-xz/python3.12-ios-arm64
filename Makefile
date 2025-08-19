@@ -1,10 +1,10 @@
-# Makefile orchestrating iOS (arm64) Python build and packaging
+# Makefile orchestrating iOS (arm64) Python build and Theos packaging
 #
 # Usage examples:
-#   make deps           # build OpenSSL and libffi
-#   make python         # build CPython and stage files
-#   make package        # create the .deb from staged files
-#   make all            # deps + python + package
+#   make deps            # build OpenSSL and libffi
+#   make python          # build CPython and stage files (work/stage/usr)
+#   make package         # copy staged files into Theos layout and package
+#   make all             # deps + python + package
 #
 SHELL := /bin/bash
 
@@ -27,10 +27,10 @@ libffi:
 python:
 	bash scripts/build-python.sh
 
-# ---- Package (.deb) ----
+# ---- Package (.deb) using Theos layout ----
 
 package:
-	bash scripts/package-deb.sh
+	bash scripts/package-theos.sh
 
 # ---- Housekeeping ----
 
