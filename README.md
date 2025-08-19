@@ -1,4 +1,4 @@
-# <img src="/icons/python3-rounded.png" alt="Logo" width="60" style="vertical-align: middle; margin-right: 8px;"> Python 3.12 for iOS (arm64) rootful
+# <img src="/icons/AppIcon-1024pt-squircle.png" alt="Logo" width="60"> Python 3.12 for iOS (arm64) rootful
 
 ![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/python3.12-ios-arm64.yml/badge.svg)  
 ![Version](https://img.shields.io/badge/Python-3.12.5-blue.svg)  
