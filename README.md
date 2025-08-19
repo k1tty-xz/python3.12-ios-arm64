@@ -1,5 +1,5 @@
 # <img src="images/python3.png" alt="Logo" width="60" style="vertical-align: middle; margin-right: 8px; border-radius: 15px;"> Python 3.12 for iOS (arm64) rootful
-![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64-deb/actions/workflows/python3.12-ios-arm64.yml/badge.svg)  
+![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/python3.12-ios-arm64.yml/badge.svg)  
 ![Version](https://img.shields.io/badge/Python-3.12.5-blue.svg)  
 ![Platform](https://img.shields.io/badge/Platform-iOS%2012.0+-lightgrey.svg)  
 ![License](https://img.shields.io/badge/License-MIT-green.svg)  
@@ -39,7 +39,7 @@ This project compiles and packages the latest stable Python 3.12 for iOS so you 
 ### Option 2: Manual Install
 
 1. Download the latest `.deb`:  
-   [GitHub Releases](https://github.com/k1tty-xz/python3.12-ios-arm64-deb/releases/latest)  
+   [GitHub Releases](https://github.com/k1tty-xz/python3.12-ios-arm64/releases/latest)  
 2. Transfer it to your device (Filza, AirDrop, SCP, etc.).  
 3. Install via Filza or run:  
    ```sh
