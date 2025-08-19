@@ -1,0 +1,10 @@
+Package: com.k1tty-xz.python3.12
+Name: Python 3.12 for iOS (arm64)
+Version: 1.0
+Architecture: iphoneos-arm
+Description: CPython 3.12 runtime for jailbroken iOS (arm64). Includes ssl (OpenSSL 1.1.1), ctypes (libffi), and pip. Installs under /usr/local.
+Maintainer: k1tty-xz
+Depends:
+Section: Development
+Priority: optional
+

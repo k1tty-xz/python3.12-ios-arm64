@@ -1,0 +1,55 @@
+# ==============================================================================
+# CI Workflow: Build and package Python 3.12 (arm64) as a Theos layout-only .deb
+# ==============================================================================
+name: python3.12-theos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Tooling for both Python cross-build and Theos packaging
+      - name: Install dependencies (toolchain + packaging)
+        run: |
+          brew update
+          brew install dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
+
+      # Build Python runtime (deps + CPython) using repo Makefile
+      - name: Build Python runtime (OpenSSL, libffi, CPython)
+        run: |
+          make deps
+          make python
+
+      # Prepare Theos staging: copy Python payload into Theos layout
+      - name: Stage Python payload into Theos layout
+        run: |
+          rm -rf package-python3.12/layout/usr || true
+          mkdir -p package-python3.12/layout
+          cp -a work/stage/usr package-python3.12/layout/usr
+
+      # Set up Theos
+      - name: Set up Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+
+      # Package with Theos
+      - name: Build Theos package (Python 3.12)
+        env:
+          THEOS: ${{ env.THEOS }}
+        working-directory: package-python3.12
+        run: |
+          make package
+
+      # Publish artifact
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python3.12_iphoneos-arm
+          path: package-python3.12/packages/*.deb
+
