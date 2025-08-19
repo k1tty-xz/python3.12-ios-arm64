@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
-# Cross-compile CPython for iOS arm64 and stage into $STAGE
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/_env.sh"
+set -euxo pipefail
 
-export PKG_CONFIG_PATH="$DEPS/libffi-ios/usr/local/lib/pkgconfig:$DEPS/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+# shellcheck disable=SC1091
+source "$(dirname "$0")/common-env.sh"
 
 cd "$BUILD"
-if [ ! -f "Python-${PY_VER}.tgz" ]; then
-  curl -LO "https://www.python.org/ftp/python/${PY_VER}/Python-${PY_VER}.tgz"
-fi
-if [ ! -d "Python-${PY_VER}" ]; then
-  tar xf "Python-${PY_VER}.tgz"
-fi
+
+curl -LO "https://www.python.org/ftp/python/${PY_VER}/Python-${PY_VER}.tgz"
+tar xf "Python-${PY_VER}.tgz"
 cd "Python-${PY_VER}"
 
 # Disable NIS on iOS to avoid rpcsvc/yp_prot.h
@@ -26,11 +21,9 @@ curl -sSLo config.sub  https://git.savannah.gnu.org/cgit/config.git/plain/config
 curl -sSLo config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess
 chmod +x config.sub config.guess
 
-# Patch configure guard that rejects cross builds
+# Replace ONLY the guard line; preserve surrounding if/case to avoid 'fi' syntax errors
 cp configure configure.orig
-if command -v gsed >/dev/null 2>&1; then SED=gsed; else SED=sed; fi
-$SED -ri 's/^[[:space:]]*as_fn_error[^\n]*cross build not supported[^\n]*$/  : # allow iOS cross build for $host/' configure || true
-
+/usr/local/bin/gsed -ri 's/^[[:space:]]*as_fn_error[^\n]*cross build not supported[^\n]*$/  : # allow iOS cross build for $host/' configure
 grep -n 'cross build not supported' configure || true
 
 # Cross-compile cache
@@ -70,12 +63,13 @@ ac_cv_func_getnameinfo=yes
 EOF
 export CONFIG_SITE="$PWD/config.site"
 
-export CPPFLAGS="-I$DEPS/openssl-ios/usr/local/include -I$DEPS/libffi-ios/usr/local/include ${CPPFLAGS:-}"
-export LDFLAGS="-L$DEPS/openssl-ios/usr/local/lib -L$DEPS/libffi-ios/usr/local/lib ${LDFLAGS:-}"
-export LIBS="-lssl -lcrypto ${LIBS:-}"
-# Provided by workflow via actions/setup-python
-export PYTHON_FOR_BUILD="${PYTHON_FOR_BUILD:-}"
+export CPPFLAGS="-I$DEPS/openssl-ios/usr/local/include -I$DEPS/libffi-ios/usr/local/include"
+export LDFLAGS="-L$DEPS/openssl-ios/usr/local/lib -L$DEPS/libffi-ios/usr/local/lib ${LDFLAGS}"
+export LIBS="-lssl -lcrypto"
+# Ensure pkg-config can resolve libffi/openssl if needed by sub-configures
+export PKG_CONFIG_PATH="$DEPS/libffi-ios/usr/local/lib/pkgconfig:$DEPS/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
+# PYTHON_FOR_BUILD must be provided by caller via env
 # Ensure shared modules link with clang (not ld)
 export LD="$CC"
 export LDSHARED="$CC -bundle -undefined dynamic_lookup $LDFLAGS"
@@ -85,7 +79,7 @@ export LDCXXSHARED="$CXX -bundle -undefined dynamic_lookup $LDFLAGS"
   --host="${HOST_TRIPLE}" \
   --build="$(uname -m)-apple-darwin" \
   --prefix=/usr/local \
-  ${PYTHON_FOR_BUILD:+--with-build-python="${PYTHON_FOR_BUILD}"} \
+  --with-build-python="${PYTHON_FOR_BUILD}" \
   --with-openssl="$DEPS/openssl-ios/usr/local" \
   --with-ensurepip=install \
   --disable-test-modules
@@ -107,6 +101,10 @@ ln -sf python3.12 "$STAGE/usr/local/bin/python" || true
 ln -sf pip3.12 "$STAGE/usr/local/bin/pip3" || true
 ln -sf pip3.12 "$STAGE/usr/local/bin/pip" || true
 
-# Sign binaries
-sign_macho_tree "$STAGE"
+# Sign binaries and loadables
+while IFS= read -r -d '' f; do
+  if file -b "$f" | grep -q 'Mach-O'; then
+    ldid -S "$f" || echo "ldid warning on $f" >&2
+  fi
+done < <(find "$STAGE" -type f \( -name "*.dylib" -o -name "*.so" -o -path "$STAGE/usr/local/bin/*" \) -print0)
 

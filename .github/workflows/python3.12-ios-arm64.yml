@@ -48,7 +48,7 @@ jobs:
           # 2) libffi (static)
           bash scripts/build-libffi.sh
           # Ensure PKG_CONFIG_PATH is set in parent shell exactly as original
-          export PKG_CONFIG_PATH="work/deps/libffi-ios/usr/local/lib/pkgconfig:work/deps/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+          export PKG_CONFIG_PATH="$DEPS/libffi-ios/usr/local/lib/pkgconfig:$DEPS/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
           # 3) CPython 3.12 build and stage (pass host python explicitly)
           PYTHON_FOR_BUILD="${{ steps.py.outputs.python-path }}" bash scripts/build-python.sh
