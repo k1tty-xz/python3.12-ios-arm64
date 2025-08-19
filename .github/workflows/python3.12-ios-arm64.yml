@@ -191,6 +191,7 @@ jobs:
           Installed-Size: ${INSTALLED_SIZE}
           Description: CPython ${PY_VER} for jailbroken iOS (arm64).
            Includes OpenSSL (ssl), ctypes, and pip.
+          Icon: https://k1tty-xz.github.io/icons/AppIcon-60pt@2x-squircle.png
           CTRL
 
           cat > "$PKGROOT/DEBIAN/postinst" <<'POST'
