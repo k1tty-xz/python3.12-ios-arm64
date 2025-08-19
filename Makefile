@@ -27,10 +27,10 @@ libffi:
 python:
 	bash scripts/build-python.sh
 
-# ---- Package (.deb) using Theos layout ----
+# ---- Package (.deb) using dpkg (inline-YML equivalent) ----
 
 package:
-	bash scripts/package-theos.sh
+	bash scripts/package-dpkg.sh
 
 # ---- Housekeeping ----
 

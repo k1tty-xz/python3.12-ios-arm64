@@ -1,9 +1,10 @@
 # ==============================================================================
-# Archived workflow: Old non-Theos Python 3.12 build
-# This workflow has been replaced by the Theos-based packaging workflow
-# at .github/workflows/theos-tweak.yml. Keeping this file for reference.
+# CI Workflow: Build Python 3.12 for iOS (arm64) and package .deb
+#
+# Style: Organized sections with comments; actual build logic delegated to
+# scripts/ via Makefile targets to keep behavior identical and YAML concise.
 # ==============================================================================
-name: (Archived) Build Python 3.12 for iOS (arm64) and package .deb
+name: Build Python 3.12 for iOS (arm64) and package .deb
 
 on:
   workflow_dispatch:
@@ -11,7 +12,57 @@ on:
 jobs:
   build:
     runs-on: macos-13
+
+    # Versions and options (identical to inline env)
+    env:
+      PY_VER: 3.12.5
+      LIBFFI_VER: 3.4.4
+      MIN_IOS: 12.0
+      OPENSSL_BRANCH: OpenSSL_1_1_1-stable
+
     steps:
-      - name: Note
+      # ------------------------------------------------------------------------
+      # 0) Source Checkout
+      # ------------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------------
+      # 1) Host Toolchain Setup
+      # ------------------------------------------------------------------------
+      - name: Install build tools
         run: |
-          echo "This workflow is archived. Use .github/workflows/theos-tweak.yml instead."
+          brew update
+          brew install dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
+
+      - name: Set up Python 3.12 for host build
+        id: py
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # ------------------------------------------------------------------------
+      # 2) Build (deps + CPython) using repository scripts
+      # ------------------------------------------------------------------------
+      - name: Build dependencies (OpenSSL, libffi)
+        run: make deps
+
+      - name: Build CPython 3.12 for iOS (arm64)
+        env:
+          PYTHON_FOR_BUILD: ${{ steps.py.outputs.python-path }}
+        run: make python
+
+      # ------------------------------------------------------------------------
+      # 3) Package as Debian .deb (mirrors inline packaging exactly)
+      # ------------------------------------------------------------------------
+      - name: Package .deb
+        run: make package
+
+      # ------------------------------------------------------------------------
+      # 4) Publish artifact
+      # ------------------------------------------------------------------------
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python3.12_iphoneos-arm
+          path: work/python3.12_*_iphoneos-arm.deb
