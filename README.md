@@ -63,23 +63,10 @@ make package
 - Name: Python 3.12 for iOS (arm64)
 - Section: Development
 
-## Requirements
-- macOS runner with Xcode toolchain (xcrun) available
-- Homebrew with: dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
-- iOS 12.0+ target (MIN_IOS)
-
 ## Performance notes
 - First run builds and caches OpenSSL and libffi
 - Subsequent runs restore cache and skip those builds, reducing time significantly
 - Python is rebuilt each run (by design) to keep behavior identical
-
-## Troubleshooting
-- On CI failure, config.log and selected logs are uploaded as artifacts under “python3.12-build-logs”
-- For local failures, inspect: work/build/Python-*/config.log
-
-## Notes
-- Built with Xcode toolchain (xcrun) targeting iOS arm64
-- Requires a jailbroken device (rootful)
 
 ## License
 MIT
