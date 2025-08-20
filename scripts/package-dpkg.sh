@@ -1,34 +1,53 @@
 #!/usr/bin/env bash
-# ---------------------------------------------
-# Package staged files into a Debian .deb under work/
-# ---------------------------------------------
+# ==============================================================================
+# Script: package-dpkg.sh
+# Purpose: Package the staged files into a Debian .deb package.
+# Requires: WORKDIR, STAGE, PY_VER (set in environment)
+# ==============================================================================
+
 set -euxo pipefail
 
+# Load common environment variables
 # shellcheck disable=SC1091
 source "$(dirname "$0")/common-env.sh"
 
+# ------------------------------------------------------------------------------
+# Prepare Package Root
+# ------------------------------------------------------------------------------
 PKGROOT="$WORKDIR/pkgroot"
 mkdir -p "$PKGROOT/DEBIAN"
+
+# Move staged files to package root
 mv "$STAGE/usr" "$PKGROOT/usr"
+
+# Calculate installed size for control file
 INSTALLED_SIZE="$(du -sk "$PKGROOT/usr" | awk '{print $1}')"
-# Render control file from template with variable substitution
+
+# ------------------------------------------------------------------------------
+# Generate Control Files
+# ------------------------------------------------------------------------------
+# Render control file from template, substituting variables
 CONTROL_TEMPLATE="$(dirname "$0")/../debian/control.in"
 # shellcheck disable=SC2016
 sed -e "s#\${PY_VER}#${PY_VER}#g" \
     -e "s#\${INSTALLED_SIZE}#${INSTALLED_SIZE}#g" \
     "$CONTROL_TEMPLATE" > "$PKGROOT/DEBIAN/control"
 
-cat > "$PKGROOT/DEBIAN/postinst" <<'POST'
-#!/bin/sh
-set -e
-ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3 || true
-ln -sf /usr/local/bin/python3.12 /usr/local/bin/python || true
-ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3 || true
-ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip || true
-exit 0
-POST
-chmod 0755 "$PKGROOT/DEBIAN/postinst"
+# ------------------------------------------------------------------------------
+# PATH Configuration
+# ------------------------------------------------------------------------------
+# Create a profile script to ensure /usr/local/bin is in the user's PATH.
+# This is critical for users to be able to type 'python3' without full paths.
+mkdir -p "$PKGROOT/etc/profile.d"
+cat > "$PKGROOT/etc/profile.d/python3.sh" <<'EOF'
+export PATH="/usr/local/bin:$PATH"
+EOF
+chmod 0644 "$PKGROOT/etc/profile.d/python3.sh"
 
+# ------------------------------------------------------------------------------
+# Build Package
+# ------------------------------------------------------------------------------
 OUTPUT="python3.12_${PY_VER}-1_iphoneos-arm.deb"
 dpkg-deb --build --root-owner-group "$PKGROOT" "$WORKDIR/$OUTPUT"
-echo "Built: $WORKDIR/$OUTPUT"
+
+echo "Success: Package built at $WORKDIR/$OUTPUT"

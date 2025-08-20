@@ -1,56 +1,96 @@
-# <img src="/icons/AppIcon-1024pt-squircle.png" alt="Icon" width="60"> Python 3.12 for iOS (arm64)
+# Python 3.12 for iOS
 
-![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/python3.12-ios-arm64.yml/badge.svg)
-![Version](https://img.shields.io/badge/Python-3.12.5-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-iOS%2012.0+-lightgrey.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+[![Build Status](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/python3.12-ios-arm64.yml/badge.svg)](https://github.com/k1tty-xz/python3.12-ios-arm64/actions)
+[![License](https://img.shields.io/github/license/k1tty-xz/python3.12-ios-arm64)](LICENSE)
+[![iOS](https://img.shields.io/badge/iOS-14.5%2B-black?logo=apple)](https://apple.com)
 
-CPython 3.12.5 for jailbroken iOS (arm64), packaged as a single Debian .deb and installed under /usr/local.
+A fully-featured, stable port of **Python 3.12** for jailbroken iOS devices (arm64). This project provides a Debian package (`.deb`) that installs a complete Python environment, optimized for mobile usage and development.
 
-## Contents
-- CPython 3.12.5 binaries and standard library
-- ssl module (OpenSSL 1.1.1), ctypes (libffi)
-- pip bootstrapping via ensurepip
+## Features
 
-## Supported
-- Architecture: arm64
-- iOS: 12.0+
-- Environment: rootful jailbreaks
+-   **Python 3.12**: Full standard library with SSL/TLS support (OpenSSL 1.1.1).
+-   **Package Management**: `pip` available via `python3 -m ensurepip`.
+-   **Automatic Setup**: Configures PATH automatically upon installation.
 
-## Install
-- From repo (recommended): add https://k1tty-xz.github.io/ to Sileo/Zebra/Cydia and install “Python 3.12 for iOS (arm64)”.
-- Manual: download the latest .deb from Releases and install with dpkg -i <file>.
+## Installation
 
-After install, symlinks are created if needed:
-- /usr/local/bin/python3 -> python3.12
-- /usr/local/bin/python  -> python3.12
-- /usr/local/bin/pip3    -> pip3.12
-- /usr/local/bin/pip     -> pip3.12
+Add the repository to your package manager (Sileo, Zebra, Cydia):
 
-## Quick check
-```sh
-python3.12 -V    # expect: Python 3.12.5
-python3.12 -m ensurepip --upgrade
-pip3.12 install <package>
+```
+https://k1tty-xz.github.io/repo/
 ```
 
-## How this is built
-- CI workflow builds dependencies (OpenSSL, libffi) and CPython for iOS
-- Files are staged into work/stage/usr
-- Packaged as a single .deb using dpkg-deb (layout-only)
+Then search for **Python 3.12 (k1tty)** and install.
 
-Workflow: .github/workflows/python3.12-ios-arm64.yml
+### Post-Installation
 
-## Local build (macOS)
-```sh
-# Build runtime
-make deps
-make python
+After installation, you may need to reload your shell profile or start a new terminal session for the PATH to update:
 
-# Package .deb (mirrors CI packaging)
-make package
-# -> work/python3.12_*.deb
+```bash
+source /etc/profile
 ```
+
+To install pip:
+
+```bash
+python3 -m ensurepip
+pip3 install --upgrade pip
+```
+
+## Build Instructions
+
+To build this package yourself, you can use the provided GitHub Actions workflow or build locally on macOS.
+
+### Prerequisites
+
+-   macOS (for Xcode toolchain)
+-   Xcode Command Line Tools
+-   Homebrew (for dependencies like `ldid`, `automake`)
+
+### Local Build
+
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/k1tty-xz/python3.12-ios-arm64.git
+    cd python3.12-ios-arm64
+    ```
+
+2.  **Install build tools**:
+    ```bash
+    bash scripts/install-build-tools.sh
+    ```
+
+3.  **Set up environment variables**:
+    ```bash
+    export PY_VER=3.12.5
+    export LIBFFI_VER=3.4.4
+    export MIN_IOS=14.5
+    export PYTHON_FOR_BUILD=$(which python3.12 || which python3)
+    ```
+
+4.  **Build and Package**:
+    ```bash
+    # This will download sources, compile, and create the .deb
+    make all
+    ```
+
+    The resulting `.deb` file will be in the `work/` directory.
+
+## Project Structure
+
+-   `scripts/`: Build scripts and patches.
+    -   `build-python.sh`: Main build logic for CPython.
+    -   `entitlements.plist`: Entitlements for code signing.
+    -   `python-configure.patch`: Patch for cross-compilation support.
+-   `debian/`: Debian packaging metadata (`control`, `prerm`, etc.).
+-   `.github/`: CI/CD configuration.
+
+## Credits
+
+-   **k1tty-xz**: Main maintainer.
+-   **Python Software Foundation**: For the Python programming language.
+-   **OpenSSL**: For the crypto library.
 
 ## License
-MIT
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
