@@ -6,6 +6,10 @@ on:
 jobs:
   build:
     runs-on: macos-13
+    timeout-minutes: 60
+    concurrency:
+      group: ios-python3.12-arm64-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       # ---------------------------------------------
@@ -13,6 +17,25 @@ jobs:
       # ---------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ---------------------------------------------
+      # Discover iOS SDK version (for caching/debug)
+      # ---------------------------------------------
+      - name: Discover SDK version
+        id: sdk
+        run: |
+          echo "version=$(xcrun --sdk iphoneos --show-sdk-version)" >> "$GITHUB_OUTPUT"
+
+      # ---------------------------------------------
+      # Restore dependency cache (OpenSSL, libffi)
+      # ---------------------------------------------
+      - name: Restore deps cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            work/deps/openssl-ios
+            work/deps/libffi-ios
+          key: ios-${{ runner.os }}-sdk-${{ steps.sdk.outputs.version }}-openssl-${{ env.OPENSSL_BRANCH }}-libffi-${{ env.LIBFFI_VER }}-hash-${{ hashFiles('scripts/*.sh', '.github/workflows/python3.12-ios-arm64.yml') }}
 
       # ---------------------------------------------
       # Install required build tools via Homebrew
@@ -65,3 +88,15 @@ jobs:
         with:
           name: python3.12_iphoneos-arm
           path: work/python3.12_*_iphoneos-arm.deb
+
+      # ---------------------------------------------
+      # Always upload logs on failure for debugging
+      # ---------------------------------------------
+      - name: Upload config.log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python3.12-build-logs
+          path: |
+            work/build/Python-*/config.log
+            work/**/build.log

@@ -10,7 +10,15 @@ source "$(dirname "$0")/common-env.sh"
 
 cd "$BUILD"
 
-curl -LO "https://www.python.org/ftp/python/${PY_VER}/Python-${PY_VER}.tgz"
+# Download with retries
+for i in 1 2 3 4 5; do
+  curl --fail --location --show-error -LO \
+    "https://www.python.org/ftp/python/${PY_VER}/Python-${PY_VER}.tgz" && break || {
+    echo "curl download failed (attempt $i)" >&2; sleep 3;
+  }
+done
+[ -f "Python-${PY_VER}.tgz" ] || { echo "Python tarball missing after retries" >&2; exit 1; }
+
 tar xf "Python-${PY_VER}.tgz"
 cd "Python-${PY_VER}"
 
@@ -101,6 +109,10 @@ awk 'BEGIN{skip=0}
 
 make -j"${JOBS}"
 make install ENSUREPIP=no DESTDIR="$STAGE"
+
+# Cleanup Python tarball to save disk
+cd "$BUILD"
+rm -f "Python-${PY_VER}.tgz"
 
 # Symlinks
 ln -sf python3.12 "$STAGE/usr/local/bin/python3" || true
