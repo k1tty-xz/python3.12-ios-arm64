@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# ---------------------------------------------
+# Build CPython for iOS arm64
+# ---------------------------------------------
+# Requires: PY_VER; common-env.sh sets toolchain vars
 set -euxo pipefail
 
 # shellcheck disable=SC1091

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# ---------------------------------------------
+# Build libffi static for iOS arm64
+# ---------------------------------------------
+# Requires: LIBFFI_VER; common-env.sh sets toolchain vars
 set -euxo pipefail
 
 # shellcheck disable=SC1091
@@ -14,4 +18,3 @@ cd "libffi-${LIBFFI_VER}"
   CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
 make -j"${JOBS}"
 make install DESTDIR="$DEPS/libffi-ios"
-

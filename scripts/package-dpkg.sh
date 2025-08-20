@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# ---------------------------------------------
+# Package staged files into a Debian .deb under work/
+# ---------------------------------------------
 set -euxo pipefail
 
 # shellcheck disable=SC1091
@@ -36,4 +39,3 @@ chmod 0755 "$PKGROOT/DEBIAN/postinst"
 OUTPUT="python3.12_${PY_VER}-1_iphoneos-arm.deb"
 dpkg-deb --build --root-owner-group "$PKGROOT" "$WORKDIR/$OUTPUT"
 echo "Built: $WORKDIR/$OUTPUT"
-
