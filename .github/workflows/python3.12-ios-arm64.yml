@@ -10,6 +10,11 @@ jobs:
     concurrency:
       group: ios-python3.12-arm64-${{ github.ref }}
       cancel-in-progress: true
+    env:
+      PY_VER: 3.12.5
+      LIBFFI_VER: 3.4.4
+      MIN_IOS: 12.0
+      OPENSSL_BRANCH: OpenSSL_1_1_1-stable
 
     steps:
       # ---------------------------------------------
@@ -36,6 +41,9 @@ jobs:
             work/deps/openssl-ios
             work/deps/libffi-ios
           key: ios-${{ runner.os }}-sdk-${{ steps.sdk.outputs.version }}-openssl-${{ env.OPENSSL_BRANCH }}-libffi-${{ env.LIBFFI_VER }}-hash-${{ hashFiles('scripts/*.sh', '.github/workflows/python3.12-ios-arm64.yml') }}
+          restore-keys: |
+            ios-${{ runner.os }}-sdk-${{ steps.sdk.outputs.version }}-openssl-${{ env.OPENSSL_BRANCH }}-libffi-${{ env.LIBFFI_VER }}-
+            ios-${{ runner.os }}-sdk-${{ steps.sdk.outputs.version }}-
 
       # ---------------------------------------------
       # Install required build tools via Homebrew

@@ -31,7 +31,7 @@ cd "openssl-${OPENSSL_BRANCH}"
 # Configure + build static
 export CROSS_TOP="$(xcrun --sdk iphoneos --show-sdk-platform-path)/Developer"
 export CROSS_SDK="$(basename "${IOS_SDK}")"
-./Configure ios64-cross no-tests no-shared --prefix=/usr/local
+./Configure ios64-cross no-tests no-shared no-apps --prefix=/usr/local
 make -j"${JOBS}"
 make install_sw DESTDIR="$DEPS/openssl-ios"
 

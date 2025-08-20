@@ -28,10 +28,32 @@ cat > Modules/Setup.local <<'EOF'
 nis
 EOF
 
-# Refresh triplet recognition
-curl -sSLo config.sub  https://git.savannah.gnu.org/cgit/config.git/plain/config.sub
-curl -sSLo config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess
-chmod +x config.sub config.guess
+# Refresh triplet recognition (vendor first, then retries + fallbacks)
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VENDOR_DIR="$REPO_ROOT/vendor/gnu-config"
+fetch_cfg() {
+  local name="$1" primary="$2" fallback="$3"
+  # Vendor copy (preferred)
+  if [ -f "$VENDOR_DIR/$name" ]; then
+    cp -f "$VENDOR_DIR/$name" "$name"
+    chmod +x "$name"
+    return 0
+  fi
+  # Network fetch with retries and timeout
+  for url in "$primary" "$fallback"; do
+    if [ -n "$url" ]; then
+      for i in 1 2 3 4 5; do
+        if curl --fail --location --show-error --retry 5 --retry-delay 3 --max-time 30 -sSLo "$name" "$url"; then
+          chmod +x "$name"; return 0; fi
+        echo "download $name failed from $url (attempt $i)" >&2; sleep 2
+      done
+    fi
+  done
+  echo "Warning: could not refresh $name; using bundled file" >&2
+  return 0
+}
+fetch_cfg config.sub   "https://git.savannah.gnu.org/cgit/config.git/plain/config.sub"   "https://raw.githubusercontent.com/gnu-config/gnu-config/master/config.sub"
+fetch_cfg config.guess "https://git.savannah.gnu.org/cgit/config.git/plain/config.guess" "https://raw.githubusercontent.com/gnu-config/gnu-config/master/config.guess"
 
 # Replace ONLY the guard line; preserve surrounding if/case to avoid 'fi' syntax errors
 cp configure configure.orig
@@ -73,8 +95,8 @@ ac_cv_working_getaddrinfo=yes
 ac_cv_buggy_getaddrinfo=no
 ac_cv_func_getnameinfo=yes
 
-# Sizes (cross-compile cache)
-ac_cv_sizeof_long_double=8
+# # Sizes (cross-compile cache)
+# ac_cv_sizeof_long_double=8
 EOF
 export CONFIG_SITE="$PWD/config.site"
 
