@@ -11,19 +11,12 @@ PKGROOT="$WORKDIR/pkgroot"
 mkdir -p "$PKGROOT/DEBIAN"
 mv "$STAGE/usr" "$PKGROOT/usr"
 INSTALLED_SIZE="$(du -sk "$PKGROOT/usr" | awk '{print $1}')"
-cat > "$PKGROOT/DEBIAN/control" <<CTRL
-Package: com.k1tty-xz.python3.12
-Name: Python 3.12 for iOS (arm64)
-Version: ${PY_VER}-1
-Section: Development
-Priority: optional
-Architecture: iphoneos-arm
-Maintainer: k1tty-xz
-Installed-Size: ${INSTALLED_SIZE}
-Description: CPython ${PY_VER} for jailbroken iOS (arm64).
- Includes OpenSSL (ssl), ctypes, and pip.
-Icon: https://k1tty-xz.github.io/icons/AppIcon-60pt@2x-squircle.png
-CTRL
+# Render control file from template with variable substitution
+CONTROL_TEMPLATE="$(dirname "$0")/../debian/control.in"
+# shellcheck disable=SC2016
+sed -e "s#\${PY_VER}#${PY_VER}#g" \
+    -e "s#\${INSTALLED_SIZE}#${INSTALLED_SIZE}#g" \
+    "$CONTROL_TEMPLATE" > "$PKGROOT/DEBIAN/control"
 
 cat > "$PKGROOT/DEBIAN/postinst" <<'POST'
 #!/bin/sh

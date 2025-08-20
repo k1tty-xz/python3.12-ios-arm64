@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/Platform-iOS%2012.0+-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-A reproducible build of CPython 3.12.5 for jailbroken iOS (arm64), packaged as a single Debian .deb. The payload installs under /usr/local.
+CPython 3.12.5 for jailbroken iOS (arm64), packaged as a single Debian .deb and installed under /usr/local.
 
 ## Contents
 - CPython 3.12.5 binaries and standard library

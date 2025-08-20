@@ -1,0 +1,12 @@
+Package: com.k1tty-xz.python3.12
+Name: Python 3.12 for iOS (arm64)
+Version: ${PY_VER}-1
+Section: Development
+Priority: optional
+Architecture: iphoneos-arm
+Maintainer: k1tty-xz
+Installed-Size: ${INSTALLED_SIZE}
+Description: CPython ${PY_VER} interpreter, standard library, and tools.
+ Includes OpenSSL (ssl) support, ctypes FFI, and pip (package manager).
+Icon: https://k1tty-xz.github.io/icons/AppIcon-60pt@2x-squircle.png
+
