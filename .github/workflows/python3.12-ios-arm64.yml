@@ -96,19 +96,3 @@ jobs:
         with:
           name: python3.12_iphoneos-arm
           path: work/python3.12_*_iphoneos-arm.deb
-
-      # ---------------------------------------------
-      # Always upload logs on failure for debugging
-      # ---------------------------------------------
-      - name: Upload build logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: python3.12-build-logs
-          if-no-files-found: warn
-          compression-level: 6
-          overwrite: false
-          path: |
-            work/build/Python-*/config.log
-            work/deps/libffi-*/config.log
-            work/deps/openssl-*/configdata.pm

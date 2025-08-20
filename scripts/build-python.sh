@@ -29,7 +29,8 @@ nis
 EOF
 
 # Refresh triplet recognition (vendor first, then retries + fallbacks)
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Derive repo root robustly from WORKDIR (which is <repo>/work)
+REPO_ROOT="$(cd "$(dirname "$WORKDIR")" && pwd)"
 VENDOR_DIR="$REPO_ROOT/vendor/gnu-config"
 fetch_cfg() {
   local name="$1" primary="$2" fallback="$3"
