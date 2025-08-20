@@ -41,12 +41,6 @@ pip3.12 install <package>
 
 Workflow: .github/workflows/python3.12-ios-arm64.yml
 
-## Build process improvements
-- Dependency caching: OpenSSL and libffi outputs are cached between runs
-- Retry logic: robust curl/git retries for downloads and clones
-- Cleanup: source trees and archives removed after install to reduce disk usage
-- Reliability: on failure, config.log and logs are uploaded as artifacts
-
 ## Local build (macOS)
 ```sh
 # Build runtime
@@ -57,16 +51,6 @@ make python
 make package
 # -> work/python3.12_*.deb
 ```
-
-## Package metadata
-- Package: com.k1tty-xz.python3.12
-- Name: Python 3.12 for iOS (arm64)
-- Section: Development
-
-## Performance notes
-- First run builds and caches OpenSSL and libffi
-- Subsequent runs restore cache and skip those builds, reducing time significantly
-- Python is rebuilt each run (by design) to keep behavior identical
 
 ## License
 MIT
