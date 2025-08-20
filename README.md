@@ -1,11 +1,11 @@
 # <img src="/icons/AppIcon-1024pt-squircle.png" alt="Icon" width="60"> Python 3.12 for iOS (arm64)
 
-![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/theos-tweak.yml/badge.svg)
+![Build & Publish](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/python3.12-ios-arm64.yml/badge.svg)
 ![Version](https://img.shields.io/badge/Python-3.12.5-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-iOS%2012.0+-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-A reproducible build of CPython 3.12.5 for jailbroken iOS (arm64), packaged as a single Debian .deb using Theos (layout-only). The payload installs under /usr/local.
+A reproducible build of CPython 3.12.5 for jailbroken iOS (arm64), packaged as a single Debian .deb. The payload installs under /usr/local.
 
 ## Contents
 - CPython 3.12.5 binaries and standard library
@@ -37,30 +37,45 @@ pip3.12 install <package>
 ## How this is built
 - CI workflow builds dependencies (OpenSSL, libffi) and CPython for iOS
 - Files are staged into work/stage/usr
-- Theos packages that staged layout as a single .deb (no MobileSubstrate hooks)
+- Packaged as a single .deb using dpkg-deb (layout-only)
 
-Workflow: .github/workflows/theos-tweak.yml
+Workflow: .github/workflows/python3.12-ios-arm64.yml
 
-## Local build (macOS + Theos)
+## Build process improvements
+- Dependency caching: OpenSSL and libffi outputs are cached between runs
+- Retry logic: robust curl/git retries for downloads and clones
+- Cleanup: source trees and archives removed after install to reduce disk usage
+- Reliability: on failure, config.log and logs are uploaded as artifacts
+
+## Local build (macOS)
 ```sh
 # Build runtime
 make deps
 make python
 
-# Stage into Theos layout
-rm -rf package-python3.12/layout/usr
-cp -a work/stage/usr package-python3.12/layout/usr
-
-# Package
-cd package-python3.12
+# Package .deb (mirrors CI packaging)
 make package
-# -> packages/*.deb
+# -> work/python3.12_*.deb
 ```
 
 ## Package metadata
 - Package: com.k1tty-xz.python3.12
 - Name: Python 3.12 for iOS (arm64)
 - Section: Development
+
+## Requirements
+- macOS runner with Xcode toolchain (xcrun) available
+- Homebrew with: dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget
+- iOS 12.0+ target (MIN_IOS)
+
+## Performance notes
+- First run builds and caches OpenSSL and libffi
+- Subsequent runs restore cache and skip those builds, reducing time significantly
+- Python is rebuilt each run (by design) to keep behavior identical
+
+## Troubleshooting
+- On CI failure, config.log and selected logs are uploaded as artifacts under “python3.12-build-logs”
+- For local failures, inspect: work/build/Python-*/config.log
 
 ## Notes
 - Built with Xcode toolchain (xcrun) targeting iOS arm64
