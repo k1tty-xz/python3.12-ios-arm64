@@ -1,31 +1,40 @@
 #!/usr/bin/env bash
-# ---------------------------------------------
-# Common environment for iOS (arm64) build
-# ---------------------------------------------
-# Expected inputs from caller (workflow):
-# - MIN_IOS (e.g., 12.0)
-# - OPENSSL_BRANCH (e.g., OpenSSL_1_1_1-stable)
-# - LIBFFI_VER (e.g., 3.4.4)
-# - PY_VER (e.g., 3.12.5)
+# ==============================================================================
+# Script: common-env.sh
+# Purpose: Define common environment variables and toolchain settings for iOS arm64 builds.
+# Usage: Sourced by other scripts.
+# ==============================================================================
+
 set -euo pipefail
 
-# ---------------------------------------------
-# Parallel jobs
-# ---------------------------------------------
+# ------------------------------------------------------------------------------
+# Parallelization
+# ------------------------------------------------------------------------------
+# Determine number of CPU cores for parallel make jobs.
 JOBS="$(sysctl -n hw.ncpu)"
 
-# ---------------------------------------------
-# Working directories
-# ---------------------------------------------
+# Default iOS version target (can be overridden by environment)
+MIN_IOS="${MIN_IOS:-14.5}"
+
+# ------------------------------------------------------------------------------
+# Directory Structure
+# ------------------------------------------------------------------------------
+# WORKDIR: Root for all build artifacts (default: <repo>/work)
+# DEPS:    Dependency build directory
+# BUILD:   Main build directory
+# STAGE:   Final staging directory for packaging
 WORKDIR="${WORKDIR:-$PWD/work}"
 DEPS="$WORKDIR/deps"
 BUILD="$WORKDIR/build"
 STAGE="$WORKDIR/stage"
+
+# Create directories if they don't exist
 mkdir -p "$DEPS" "$BUILD" "$STAGE"
 
-# ---------------------------------------------
-# Xcode toolchain / target (shell variables, not exported)
-# ---------------------------------------------
+# ------------------------------------------------------------------------------
+# iOS Toolchain Configuration
+# ------------------------------------------------------------------------------
+# Locate the iOS SDK and toolchain binaries using xcrun.
 IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
 CC="$(xcrun --sdk iphoneos -f clang)"
 CXX="$(xcrun --sdk iphoneos -f clang++)"
@@ -34,13 +43,16 @@ RANLIB="$(xcrun --sdk iphoneos -f ranlib)"
 STRIP="$(xcrun --sdk iphoneos -f strip)"
 HOST_TRIPLE="aarch64-apple-darwin"
 
-# ---------------------------------------------
-# Base flags for cross-compiling to iOS arm64
-# ---------------------------------------------
+# ------------------------------------------------------------------------------
+# Compiler Flags
+# ------------------------------------------------------------------------------
+# CFLAGS/LDFLAGS: Set architecture to arm64, point to SDK, and set min iOS version.
+# -fPIC is required for building shared libraries/extensions.
 export CFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS} -fPIC"
 export LDFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS}"
 
-# ---------------------------------------------
-# Export essential variables for child scripts
-# ---------------------------------------------
+# ------------------------------------------------------------------------------
+# Exports
+# ------------------------------------------------------------------------------
+# Export variables for use in child scripts.
 export JOBS WORKDIR DEPS BUILD STAGE IOS_SDK HOST_TRIPLE

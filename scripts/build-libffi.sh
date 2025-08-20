@@ -1,38 +1,66 @@
 #!/usr/bin/env bash
-# ---------------------------------------------
-# Build libffi static for iOS arm64
-# ---------------------------------------------
-# Requires: LIBFFI_VER; common-env.sh sets toolchain vars
+# ==============================================================================
+# Script: build-libffi.sh
+# Purpose: Build libffi (static library) for iOS arm64.
+# Requires: LIBFFI_VER (set in environment or common-env.sh)
+# ==============================================================================
+
 set -euxo pipefail
 
+# Load common environment variables and toolchain settings
 # shellcheck disable=SC1091
 source "$(dirname "$0")/common-env.sh"
 
-# Skip if output already exists (supports cache restore)
+# ------------------------------------------------------------------------------
+# Check for Existing Build
+# ------------------------------------------------------------------------------
+# If the static library already exists, skip the build to save time.
 if [ -f "$DEPS/libffi-ios/usr/local/lib/libffi.a" ]; then
-  echo "libffi already built, skipping"
+  echo "Info: libffi already built. Skipping..."
   exit 0
 fi
 
 cd "$DEPS"
 
-# Download with retries
+# ------------------------------------------------------------------------------
+# Download Source
+# ------------------------------------------------------------------------------
+# Download the libffi source tarball with retries to handle network flakiness.
 for i in 1 2 3 4 5; do
   curl --fail --location --show-error -LO \
     "https://github.com/libffi/libffi/releases/download/v${LIBFFI_VER}/libffi-${LIBFFI_VER}.tar.gz" && break || {
-    echo "curl download failed (attempt $i)" >&2; sleep 3;
+    echo "Error: Download failed (attempt $i). Retrying in 3s..." >&2
+    sleep 3
   }
 done
-[ -f "libffi-${LIBFFI_VER}.tar.gz" ] || { echo "libffi tarball missing after retries" >&2; exit 1; }
 
+# Verify the download was successful
+[ -f "libffi-${LIBFFI_VER}.tar.gz" ] || { echo "Error: libffi tarball missing." >&2; exit 1; }
+
+# Extract source
 tar xf "libffi-${LIBFFI_VER}.tar.gz"
 cd "libffi-${LIBFFI_VER}"
-./configure --host="${HOST_TRIPLE}" --prefix=/usr/local --disable-shared --enable-static \
-  CC="${CC} -arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IOS}" \
-  CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+
+# ------------------------------------------------------------------------------
+# Configure and Build
+# ------------------------------------------------------------------------------
+# Configure for iOS arm64 cross-compilation.
+# CFLAGS/LDFLAGS/CC are picked up from the environment (exported by common-env.sh).
+./configure \
+  --host="${HOST_TRIPLE}" \
+  --prefix=/usr/local \
+  --disable-shared \
+  --enable-static
+
+# Compile using the number of available CPU cores
 make -j"${JOBS}"
+
+# Install to the dependency staging directory
 make install DESTDIR="$DEPS/libffi-ios"
 
-# Cleanup source and tarball to save disk
+# ------------------------------------------------------------------------------
+# Cleanup
+# ------------------------------------------------------------------------------
+# Remove source directory and tarball to free up disk space.
 cd "$DEPS"
 rm -rf "libffi-${LIBFFI_VER}" "libffi-${LIBFFI_VER}.tar.gz"

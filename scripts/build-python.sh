@@ -1,73 +1,85 @@
 #!/usr/bin/env bash
-# ---------------------------------------------
-# Build CPython for iOS arm64
-# ---------------------------------------------
-# Requires: PY_VER; common-env.sh sets toolchain vars
+# ==============================================================================
+# Script: build-python.sh
+# Purpose: Build CPython 3.12 for iOS arm64.
+# Requires: PY_VER (set in environment)
+# ==============================================================================
+
 set -euxo pipefail
 
+# Load common environment variables and toolchain settings
 # shellcheck disable=SC1091
 source "$(dirname "$0")/common-env.sh"
 
 cd "$BUILD"
 
-# Download with retries
+# ------------------------------------------------------------------------------
+# Pre-flight Checks
+# ------------------------------------------------------------------------------
+# Ensure PYTHON_FOR_BUILD is set and executable.
+# This is required for cross-compiling Python (it needs a host python to run tools).
+if [ -z "${PYTHON_FOR_BUILD:-}" ]; then
+    echo "Error: PYTHON_FOR_BUILD is not set." >&2
+    echo "Please set it to the path of a host python${PY_VER} interpreter." >&2
+    exit 1
+fi
+if [ ! -x "$PYTHON_FOR_BUILD" ]; then
+    echo "Error: PYTHON_FOR_BUILD='$PYTHON_FOR_BUILD' is not executable." >&2
+    exit 1
+fi
+
+# ------------------------------------------------------------------------------
+# Download CPython Source
+# ------------------------------------------------------------------------------
+# Download the official Python source tarball with retries.
 for i in 1 2 3 4 5; do
   curl --fail --location --show-error -LO \
     "https://www.python.org/ftp/python/${PY_VER}/Python-${PY_VER}.tgz" && break || {
-    echo "curl download failed (attempt $i)" >&2; sleep 3;
+    echo "Error: Download failed (attempt $i). Retrying in 3s..." >&2
+    sleep 3
   }
 done
-[ -f "Python-${PY_VER}.tgz" ] || { echo "Python tarball missing after retries" >&2; exit 1; }
 
+# Verify download
+[ -f "Python-${PY_VER}.tgz" ] || { echo "Error: Python tarball missing." >&2; exit 1; }
+
+# Extract source
 tar xf "Python-${PY_VER}.tgz"
 cd "Python-${PY_VER}"
 
-# Disable NIS on iOS to avoid rpcsvc/yp_prot.h
+# ------------------------------------------------------------------------------
+# Patching and Configuration
+# ------------------------------------------------------------------------------
+
+# Disable NIS (Network Information Service) module on iOS to avoid missing headers.
 cat > Modules/Setup.local <<'EOF'
 *disabled*
 nis
 EOF
 
-# Refresh triplet recognition (vendor first, then retries + fallbacks)
+# Refresh triplet recognition (config.sub/config.guess)
 # Derive repo root robustly from WORKDIR (which is <repo>/work)
 REPO_ROOT="$(cd "$(dirname "$WORKDIR")" && pwd)"
 VENDOR_DIR="$REPO_ROOT/vendor/gnu-config"
-fetch_cfg() {
-  local name="$1" primary="$2" fallback="$3"
-  # Vendor copy (preferred)
-  if [ -f "$VENDOR_DIR/$name" ]; then
-    cp -f "$VENDOR_DIR/$name" "$name"
-    chmod +x "$name"
-    return 0
-  fi
-  # Network fetch with retries and timeout
-  for url in "$primary" "$fallback"; do
-    if [ -n "$url" ]; then
-      for i in 1 2 3 4 5; do
-        if curl --fail --location --show-error --retry 5 --retry-delay 3 --max-time 30 -sSLo "$name" "$url"; then
-          chmod +x "$name"; return 0; fi
-        echo "download $name failed from $url (attempt $i)" >&2; sleep 2
-      done
-    fi
-  done
-  echo "Warning: could not refresh $name; using bundled file" >&2
-  return 0
-}
-fetch_cfg config.sub   "https://git.savannah.gnu.org/cgit/config.git/plain/config.sub"   "https://raw.githubusercontent.com/gnu-config/gnu-config/master/config.sub"
-fetch_cfg config.guess "https://git.savannah.gnu.org/cgit/config.git/plain/config.guess" "https://raw.githubusercontent.com/gnu-config/gnu-config/master/config.guess"
 
-# Replace ONLY the guard line; preserve surrounding if/case to avoid 'fi' syntax errors
-cp configure configure.orig
-/usr/local/bin/gsed -ri 's/^[[:space:]]*as_fn_error[^\n]*cross build not supported[^\n]*$/  : # allow iOS cross build for $host/' configure
+# Use patch file for configure script to allow cross-compilation.
+# This replaces the "cross build not supported" error with a warning.
+PATCH_FILE="$REPO_ROOT/scripts/python-configure.patch"
+patch -p0 < "$PATCH_FILE" || {
+    echo "Error: Patch failed. Falling back to sed..."
+    cp configure configure.orig
+    /usr/local/bin/gsed -ri 's/^[[:space:]]*as_fn_error[^\n]*cross build not supported[^\n]*$/  : # allow iOS cross build for $host/' configure
+}
 grep -n 'cross build not supported' configure || true
 
-# Cross-compile cache
+# Create config.site to pre-define answers for configure checks that cannot run
+# during cross-compilation.
 cat > config.site <<'EOF'
 # Files
 ac_cv_file__dev_ptc=no
 ac_cv_file__dev_ptmx=no
 
-# Functions that are problematic or unavailable on iOS
+# Functions problematic or unavailable on iOS
 ac_cv_func_system=no
 ac_cv_func_pipe2=no
 ac_cv_func_forkpty=no
@@ -82,7 +94,7 @@ ac_cv_func_utimensat=no
 ac_cv_func_posix_fallocate=no
 ac_cv_func_clock_settime=no
 
-# Disable NIS (nis module) on iOS
+# Disable NIS
 ac_cv_header_rpcsvc_yp_prot_h=no
 ac_cv_header_rpcsvc_ypclnt_h=no
 ac_cv_header_rpcsvc_rpcsvc_h=no
@@ -90,29 +102,26 @@ ac_cv_func_yp_get_default_domain=no
 ac_cv_lib_nsl_yp_get_default_domain=no
 ac_cv_have_nis=no
 
-# IPv6/getaddrinfo (keep enabled)
+# Networking
 ac_cv_func_getaddrinfo=yes
 ac_cv_working_getaddrinfo=yes
 ac_cv_buggy_getaddrinfo=no
 ac_cv_func_getnameinfo=yes
-
-# # Sizes (cross-compile cache)
-# ac_cv_sizeof_long_double=8
 EOF
 export CONFIG_SITE="$PWD/config.site"
 
+# Set compiler flags to include our dependencies (OpenSSL, libffi)
 export CPPFLAGS="-I$DEPS/openssl-ios/usr/local/include -I$DEPS/libffi-ios/usr/local/include"
 export LDFLAGS="-L$DEPS/openssl-ios/usr/local/lib -L$DEPS/libffi-ios/usr/local/lib ${LDFLAGS}"
 export LIBS="-lssl -lcrypto"
-# Ensure pkg-config can resolve libffi/openssl if needed by sub-configures
 export PKG_CONFIG_PATH="$DEPS/libffi-ios/usr/local/lib/pkgconfig:$DEPS/openssl-ios/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
-# PYTHON_FOR_BUILD must be provided by caller via env
-# Ensure shared modules link with clang (not ld)
+# Configure linker for shared modules
 export LD="$CC"
 export LDSHARED="$CC -bundle -undefined dynamic_lookup $LDFLAGS"
 export LDCXXSHARED="$CXX -bundle -undefined dynamic_lookup $LDFLAGS"
 
+# Run configure
 ./configure \
   --host="${HOST_TRIPLE}" \
   --build="$(uname -m)-apple-darwin" \
@@ -122,7 +131,7 @@ export LDCXXSHARED="$CXX -bundle -undefined dynamic_lookup $LDFLAGS"
   --with-ensurepip=install \
   --disable-test-modules
 
-# Skip checksharedmods (host can't import arm64 .so during cross-compile)
+# Patch Makefile to skip 'checksharedmods' which fails during cross-compilation
 awk 'BEGIN{skip=0}
   /^checksharedmods:/{print "checksharedmods:\n\t@true"; skip=1; next}
   skip && (/^\t/ || /^[[:space:]]*$/){next}
@@ -130,23 +139,37 @@ awk 'BEGIN{skip=0}
   {print}
 ' Makefile > Makefile.new && mv Makefile.new Makefile
 
+# ------------------------------------------------------------------------------
+# Build and Install
+# ------------------------------------------------------------------------------
 make -j"${JOBS}"
 make install ENSUREPIP=no DESTDIR="$STAGE"
 
-# Cleanup Python tarball to save disk
+# Cleanup source tarball
 cd "$BUILD"
 rm -f "Python-${PY_VER}.tgz"
 
-# Symlinks
-ln -sf python3.12 "$STAGE/usr/local/bin/python3" || true
-ln -sf python3.12 "$STAGE/usr/local/bin/python" || true
-ln -sf pip3.12 "$STAGE/usr/local/bin/pip3" || true
-ln -sf pip3.12 "$STAGE/usr/local/bin/pip" || true
+# ------------------------------------------------------------------------------
+# Post-Processing
+# ------------------------------------------------------------------------------
 
-# Sign binaries and loadables
+# Create symlinks for version-agnostic names (python3)
+ln -sf python3.12 "$STAGE/usr/local/bin/python3" || true
+
+# Strip debug symbols to reduce package size
+# We use the iOS toolchain strip
+echo "Stripping binaries..."
+find "$STAGE" -type f \( -name "*.dylib" -o -name "*.so" -o -path "$STAGE/usr/local/bin/*" \) | while read -r f; do
+    if file -b "$f" | grep -q 'Mach-O'; then
+        "$STRIP" -x "$f" || echo "Warning: strip failed on $f" >&2
+    fi
+done
+
+# Sign binaries with entitlements
+# This is critical for iOS to allow the binaries to run, especially on jailbroken devices.
+ENTITLEMENTS="$REPO_ROOT/scripts/entitlements.plist"
 while IFS= read -r -d '' f; do
   if file -b "$f" | grep -q 'Mach-O'; then
-    ldid -S "$f" || echo "ldid warning on $f" >&2
+    ldid -S"$ENTITLEMENTS" "$f" || echo "Warning: ldid failed on $f" >&2
   fi
 done < <(find "$STAGE" -type f \( -name "*.dylib" -o -name "*.so" -o -path "$STAGE/usr/local/bin/*" \) -print0)
-
