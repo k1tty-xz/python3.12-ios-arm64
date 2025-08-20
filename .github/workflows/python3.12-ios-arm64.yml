@@ -100,11 +100,15 @@ jobs:
       # ---------------------------------------------
       # Always upload logs on failure for debugging
       # ---------------------------------------------
-      - name: Upload config.log on failure
+      - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: python3.12-build-logs
+          if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
           path: |
             work/build/Python-*/config.log
-            work/**/build.log
+            work/deps/libffi-*/config.log
+            work/deps/openssl-*/configdata.pm
