@@ -33,6 +33,20 @@ sed -e "s#\${PY_VER}#${PY_VER}#g" \
     -e "s#\${INSTALLED_SIZE}#${INSTALLED_SIZE}#g" \
     "$CONTROL_TEMPLATE" > "$PKGROOT/DEBIAN/control"
 
+# Copy changelog to package for package manager integration
+CHANGELOG_FILE="$(dirname "$0")/../debian/changelog"
+if [ -f "$CHANGELOG_FILE" ]; then
+    mkdir -p "$PKGROOT/usr/share/doc/com.k1tty-xz.python3"
+    gzip -9 -n -c "$CHANGELOG_FILE" > "$PKGROOT/usr/share/doc/com.k1tty-xz.python3/changelog.gz"
+fi
+
+# Copy copyright file (Debian package requirement)
+COPYRIGHT_FILE="$(dirname "$0")/../debian/copyright"
+if [ -f "$COPYRIGHT_FILE" ]; then
+    mkdir -p "$PKGROOT/usr/share/doc/com.k1tty-xz.python3"
+    cp "$COPYRIGHT_FILE" "$PKGROOT/usr/share/doc/com.k1tty-xz.python3/copyright"
+fi
+
 # ------------------------------------------------------------------------------
 # PATH Configuration
 # ------------------------------------------------------------------------------

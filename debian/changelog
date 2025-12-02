@@ -1,0 +1,10 @@
+python3.12 (3.12.5-1) stable; urgency=medium
+
+  * Initial release of Python 3.12.5 for iOS
+  * Full standard library with SSL/TLS support (OpenSSL 1.1.1)
+  * Package management via python3 -m ensurepip
+  * Automatic PATH configuration
+  * Jailbreak optimized with proper entitlements
+  * Minimum iOS version: 14.5+
+
+ -- k1tty-xz  Mon, 02 Dec 2025 03:52:00 +0100
