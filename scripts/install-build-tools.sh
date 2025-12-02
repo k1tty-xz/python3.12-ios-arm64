@@ -18,7 +18,7 @@ export HOMEBREW_NO_INSTALL_CLEANUP=1
 # Install Dependencies
 # ------------------------------------------------------------------------------
 # List of required formulas
-FORMULAE=(dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget patch)
+FORMULAE=(dpkg ldid autoconf automake libtool pkg-config coreutils gnu-sed cmake nasm yasm git wget gpatch)
 
 # Install only missing formulas
 for f in "${FORMULAE[@]}"; do
