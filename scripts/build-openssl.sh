@@ -55,7 +55,7 @@ export CROSS_TOP="$(xcrun --sdk iphoneos --show-sdk-platform-path)/Developer"
 export CROSS_SDK="$(basename "${IOS_SDK}")"
 
 # Configure for iOS 64-bit, static only, no extra tools/tests
-./Configure ios64-cross no-tests no-shared no-apps --prefix=/usr/local
+./Configure ios64-cross no-tests no-shared --prefix=/usr/local
 
 # Compile
 make -j"${JOBS}"
