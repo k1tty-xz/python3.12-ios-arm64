@@ -1,39 +1,96 @@
-# CPython 3.14 for jailbroken iOS
+# Python 3.12 for iOS
 
-A complete, system-wide CPython 3.14.7 package for rootful jailbroken iOS.
+[![Build Status](https://github.com/k1tty-xz/python3.12-ios-arm64/actions/workflows/python3.12-ios-arm64.yml/badge.svg)](https://github.com/k1tty-xz/python3.12-ios-arm64/actions)
+[![License](https://img.shields.io/github/license/k1tty-xz/python3.12-ios-arm64)](LICENSE)
+[![iOS](https://img.shields.io/badge/iOS-14.5%2B-black?logo=apple)](https://apple.com)
 
-## Current build
+A fully-featured, stable port of **Python 3.12** for jailbroken iOS devices (arm64). This project provides a Debian package (`.deb`) that installs a complete Python environment, optimized for mobile usage and development.
 
-- Package: `python3.14 3.14.7-8`
-- Target: `arm64-apple-ios` for arm64 and arm64e devices
-- Prefix: `/usr`
-- Includes the standard library, subprocess support, and pip
-- Rootful behavior was verified on iOS 14.8; this revision awaits a device regression test
+## Features
 
-## Install
+-   **Python 3.12**: Full standard library with SSL/TLS support (OpenSSL 1.1.1).
+-   **Package Management**: `pip` available via `python3 -m ensurepip`.
+-   **Automatic Setup**: Configures PATH automatically upon installation.
 
-Add `https://k1tty-xz.github.io/` to your package manager, then run:
+## Installation
 
-```sh
-apt update
-apt install python3.14
+Add the repository to your package manager (Sileo, Zebra, Cydia):
+
+```
+https://k1tty-xz.github.io/repo/
 ```
 
-Start Python with `python3` and use pip with `python3 -m pip`.
+Then search for **Python 3.12 (k1tty)** and install.
 
-## Build
+### Post-Installation
 
-Run [Build rootful package](https://github.com/k1tty-xz/python-ios/actions/workflows/build.yml).
-The workflow uses CPython's official iOS build system and official command-line
-launcher, then produces one installable `.deb`.
+After installation, you may need to reload your shell profile or start a new terminal session for the PATH to update:
 
-A single patch enables jailbreak-only process support, terminal streams, pip
-staging, and CLI-safe iOS version detection. These changes are not supported on
-stock iOS.
+```bash
+source /etc/profile
+```
 
-Rootless packaging and the optional `readline` extension are not included yet.
+To install pip:
 
-## References
+```bash
+python3 -m ensurepip
+pip3 install --upgrade pip
+```
 
-- [CPython iOS build documentation](https://github.com/python/cpython/blob/v3.14.7/Apple/iOS/README.md)
-- [PEP 730](https://peps.python.org/pep-0730/)
+## Build Instructions
+
+To build this package yourself, you can use the provided GitHub Actions workflow or build locally on macOS.
+
+### Prerequisites
+
+-   macOS (for Xcode toolchain)
+-   Xcode Command Line Tools
+-   Homebrew (for dependencies like `ldid`, `automake`)
+
+### Local Build
+
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/k1tty-xz/python3.12-ios-arm64.git
+    cd python3.12-ios-arm64
+    ```
+
+2.  **Install build tools**:
+    ```bash
+    bash scripts/install-build-tools.sh
+    ```
+
+3.  **Set up environment variables**:
+    ```bash
+    export PY_VER=3.12.5
+    export LIBFFI_VER=3.4.4
+    export MIN_IOS=14.5
+    export PYTHON_FOR_BUILD=$(which python3.12 || which python3)
+    ```
+
+4.  **Build and Package**:
+    ```bash
+    # This will download sources, compile, and create the .deb
+    make all
+    ```
+
+    The resulting `.deb` file will be in the `work/` directory.
+
+## Project Structure
+
+-   `scripts/`: Build scripts and patches.
+    -   `build-python.sh`: Main build logic for CPython.
+    -   `entitlements.plist`: Entitlements for code signing.
+    -   `python-configure.patch`: Patch for cross-compilation support.
+-   `debian/`: Debian packaging metadata (`control`, `prerm`, etc.).
+-   `.github/`: CI/CD configuration.
+
+## Credits
+
+-   **k1tty-xz**: Main maintainer.
+-   **Python Software Foundation**: For the Python programming language.
+-   **OpenSSL**: For the crypto library.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
