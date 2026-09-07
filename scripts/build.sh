@@ -76,6 +76,12 @@ build_arm64e_dependencies() {
 
     sdk_root="$(xcrun --sdk iphoneos --show-sdk-path)"
     target_flags="-target arm64-apple-ios14.8 --sysroot=$sdk_root -mios-version-min=14.8 -arch arm64e"
+    # The pinned dependency Makefile invokes libffi's recursive make without
+    # forwarding its target-specific variables. Export these flags and let
+    # the recursive make inherit them so libffi cannot fall back to arm64.
+    export CFLAGS="$target_flags"
+    export CXXFLAGS="$target_flags"
+    export LDFLAGS="$target_flags"
     make -C "$deps_dir" -j3 iOS \
         TARGETS-iOS=iphoneos.arm64 \
         BUILD_NUMBER=arm64e \
@@ -88,7 +94,8 @@ build_arm64e_dependencies() {
         CFLAGS="$target_flags" \
         CXXFLAGS="$target_flags" \
         LDFLAGS="$target_flags" \
-        CFLAGS-iOS="-mios-version-min=14.8 -arch arm64e"
+        CFLAGS-iOS="-mios-version-min=14.8 -arch arm64e" \
+        MAKEFLAGS=-e
 
     declare -a products=(
         "bzip2-1.0.8-arm64e-iphoneos.arm64.tar.gz:bzip2-1.0.8-2-iphoneos.arm64.tar.gz"
