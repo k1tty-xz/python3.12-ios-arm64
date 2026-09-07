@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **CI/CD**: Updated the macOS toolchain actions to Node 24-compatible releases and libffi to 3.4.8 for current Apple assembler compatibility.
+- **Cross-Compilation**: Seeded the arm64 Darwin ABI sizes required by CPython configure and corrected the cross-build patch for Python 3.12.5.
 - **Requirements**: Bumped minimum iOS version to 14.5.
 - **Packaging**: Updated package metadata to reflect that `pip` is installed on-demand.
 - **Assets**: Updated AppIcon to a new standard design.

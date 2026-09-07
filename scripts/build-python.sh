@@ -62,19 +62,37 @@ EOF
 REPO_ROOT="$(cd "$(dirname "$WORKDIR")" && pwd)"
 VENDOR_DIR="$REPO_ROOT/vendor/gnu-config"
 
-# Use patch file for configure script to allow cross-compilation.
-# This replaces the "cross build not supported" error with a warning.
+# Use the patch file for configure script to allow cross-compilation.
 PATCH_FILE="$REPO_ROOT/scripts/python-configure.patch"
-gpatch -p0 < "$PATCH_FILE" || {
-    echo "Error: Patch failed. Falling back to sed..."
-    cp configure configure.orig
-    /usr/local/bin/gsed -ri 's/^[[:space:]]*as_fn_error[^\n]*cross build not supported[^\n]*$/  : # allow iOS cross build for $host/' configure
-}
-grep -n 'cross build not supported' configure || true
+gpatch -p0 < "$PATCH_FILE"
 
 # Create config.site to pre-define answers for configure checks that cannot run
 # during cross-compilation.
 cat > config.site <<'EOF'
+# CPython's configure probes cannot execute iOS binaries on the macOS host.
+# These are the ABI sizes and alignments for arm64 Darwin/iOS.
+ac_cv_sizeof_int=4
+ac_cv_sizeof_long=8
+ac_cv_alignof_long=8
+ac_cv_sizeof_long_long=8
+ac_cv_sizeof_void_p=8
+ac_cv_sizeof_short=2
+ac_cv_sizeof_float=4
+ac_cv_sizeof_double=8
+ac_cv_sizeof_fpos_t=8
+ac_cv_sizeof_size_t=8
+ac_cv_alignof_size_t=8
+ac_cv_sizeof_pid_t=4
+ac_cv_sizeof_uintptr_t=8
+ac_cv_alignof_max_align_t=16
+ac_cv_sizeof_long_double=8
+ac_cv_sizeof__Bool=1
+ac_cv_sizeof_off_t=8
+ac_cv_sizeof_time_t=8
+ac_cv_sizeof_pthread_t=8
+ac_cv_sizeof_pthread_key_t=8
+ac_cv_sizeof_wchar_t=4
+
 # Files
 ac_cv_file__dev_ptc=no
 ac_cv_file__dev_ptmx=no
