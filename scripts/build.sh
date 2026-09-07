@@ -78,7 +78,7 @@ install -m 755 "$ROOT_DIR/packaging/postinst" "$PKG_ROOT/DEBIAN/postinst"
 
 # Validate and sign every shipped native binary, including all extensions.
 while IFS= read -r -d '' native; do
-    lipo -verify_arch arm64 "$native"
+    lipo "$native" -verify_arch arm64
     codesign -f -s - --timestamp=none "$native"
     codesign --verify "$native"
 done < <(find "$PREFIX" -type f \( -name '*.so' -o -name Python -o -name "python$PYTHON_VERSION" \) -print0)
@@ -86,15 +86,17 @@ done < <(find "$PREFIX" -type f \( -name '*.so' -o -name Python -o -name "python
 dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$PACKAGE"
 VERIFY="$BUILD_ROOT/verify"
 dpkg-deb --extract "$PACKAGE" "$VERIFY"
+PREFIX="$VERIFY/usr/local"
+LIB_DIR="$PREFIX/lib/python$PYTHON_VERSION"
 test "$(dpkg-deb -f "$PACKAGE" Architecture)" = iphoneos-arm
 test "$(dpkg-deb -f "$PACKAGE" Version)" = "$VERSION-1"
-test -x "$VERIFY/usr/local/bin/python$PYTHON_VERSION"
-test -x "$VERIFY/usr/local/bin/pip$PYTHON_VERSION"
-test -f "$VERIFY/usr/local/lib/python$PYTHON_VERSION/encodings/__init__.py"
-test -f "$VERIFY/usr/local/lib/python$PYTHON_VERSION/os.py"
-test -f "$VERIFY/usr/local/lib/python$PYTHON_VERSION/site-packages/pip/__main__.py"
+test -x "$PREFIX/bin/python$PYTHON_VERSION"
+test -x "$PREFIX/bin/pip$PYTHON_VERSION"
+test -f "$LIB_DIR/encodings/__init__.py"
+test -f "$LIB_DIR/os.py"
+test -f "$LIB_DIR/site-packages/pip/__main__.py"
 for module in _ssl _hashlib _ctypes _sqlite3 _bz2 _lzma _decimal _zstd zlib; do
-    extensions=("$VERIFY/usr/local/lib/python$PYTHON_VERSION/lib-dynload/$module".*.so)
+    extensions=("$LIB_DIR/lib-dynload/$module".*.so)
     test -f "${extensions[0]}"
 done
 ls -lh "$PACKAGE"
