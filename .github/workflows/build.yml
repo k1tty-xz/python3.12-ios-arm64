@@ -7,6 +7,7 @@ on:
       - '.github/workflows/build.yml'
       - 'CPYTHON_VERSION'
       - 'CPYTHON_SHA256'
+      - 'CPYTHON_APPLE_DEPS_COMMIT'
       - 'packaging/**'
       - 'scripts/**'
 
@@ -19,42 +20,20 @@ jobs:
     # includes iOS 14. Newer Xcode releases require iOS 15 or later.
     runs-on: macos-14
     timeout-minutes: 180
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_15.4.app/Contents/Developer
 
     steps:
       - name: Check out source
         uses: actions/checkout@v6
 
-      - name: Select the pinned Xcode toolchain
+      - name: Check the pinned Xcode toolchain
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-path
-          xcrun clang --version
 
       - name: Build CPython arm64 and arm64e package
-        run: |
-          chmod +x scripts/build.sh scripts/device-smoke.sh
-          scripts/build.sh 2>&1 | tee "$RUNNER_TEMP/python-ios-build.log"
-
-      - name: Show release files
-        if: ${{ always() }}
-        run: |
-          echo "workspace=$GITHUB_WORKSPACE"
-          echo "runner_temp=$RUNNER_TEMP"
-          if [ -d "$RUNNER_TEMP/python-ios-dist" ]; then
-            find "$RUNNER_TEMP/python-ios-dist" -maxdepth 2 -type f -print -exec ls -lh {} \;
-          else
-            echo "No release directory was created"
-          fi
-
-      - name: Upload build log after a failure
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-ios-build-log-${{ github.sha }}
-          path: ${{ runner.temp }}/python-ios-build.log
-          if-no-files-found: error
-          retention-days: 7
+        run: ./scripts/build.sh
 
       - name: Upload rootful Debian package
         uses: actions/upload-artifact@v4
