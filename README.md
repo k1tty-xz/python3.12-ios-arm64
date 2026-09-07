@@ -56,6 +56,10 @@ package from PyPI into a temporary directory. It intentionally avoids
 `subprocess`: iOS has platform restrictions around process creation even when
 the rootful filesystem is writable.
 
+The simulator test keeps the rest of CPython's fast CI suite but excludes its
+live network-resource tests (`-u-network`), because external FTP services can
+reject a GitHub runner's temporary address even when the build is correct.
+
 The package architecture is deliberately `iphoneos-arm`, which is the Theos
 rootful architecture name. `iphoneos-arm64` is the rootless package
 architecture and is not used for this iOS 14.8 rootful target.
