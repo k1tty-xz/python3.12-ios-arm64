@@ -47,6 +47,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-ios-rootful-${{ github.sha }}
-          path: dist/*.deb
+          path: ${{ github.workspace }}/dist/
           if-no-files-found: error
           retention-days: 14
