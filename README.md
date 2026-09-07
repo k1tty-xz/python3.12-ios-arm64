@@ -16,8 +16,11 @@ the physical-device ABI `arm64`.
 
 ## Build
 
-Run the GitHub Actions workflow manually, or push a change that touches one of
-the workflow inputs. It produces an artifact containing:
+There is one build entry point: run the **Build CPython for rootful iOS 14.8**
+workflow manually, or push a change that touches one of its inputs. You do not
+need macOS, Xcode, Theos, or Procursus on your computer; GitHub Actions
+provides the macOS/Xcode build environment. The workflow produces an artifact
+containing:
 
 ```text
 python-ios_3.14.7-1_iphoneos-arm.deb
@@ -61,6 +64,11 @@ the rootful filesystem is writable.
 The package architecture is deliberately `iphoneos-arm`, which is the Theos
 rootful architecture name. `iphoneos-arm64` is the rootless package
 architecture and is not used for this iOS 14.8 rootful target.
+
+The implementation details are intentionally kept behind
+[`scripts/build.sh`](scripts/build.sh). That single script downloads and
+checks the pinned CPython source, invokes CPython's official Apple builder,
+builds the arm64e dependency archives, creates the package, and verifies it.
 
 ## What is verified in CI
 

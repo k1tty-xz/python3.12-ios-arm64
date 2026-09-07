@@ -31,16 +31,21 @@ jobs:
           xcrun --sdk iphoneos --show-sdk-path
           xcrun clang --version
 
-      - name: Build CPython, arm64e variant, package, and verify
+      - name: Build CPython arm64 and arm64e package
         run: |
-          chmod +x scripts/*.sh
-          scripts/build-cpython.sh 2>&1 | tee "$RUNNER_TEMP/python-ios-build.log"
+          chmod +x scripts/build.sh scripts/device-smoke.sh
+          scripts/build.sh 2>&1 | tee "$RUNNER_TEMP/python-ios-build.log"
 
       - name: Show release files
+        if: ${{ always() }}
         run: |
           echo "workspace=$GITHUB_WORKSPACE"
           echo "runner_temp=$RUNNER_TEMP"
-          find "$RUNNER_TEMP/python-ios-dist" -maxdepth 2 -type f -print -exec ls -lh {} \;
+          if [ -d "$RUNNER_TEMP/python-ios-dist" ]; then
+            find "$RUNNER_TEMP/python-ios-dist" -maxdepth 2 -type f -print -exec ls -lh {} \;
+          else
+            echo "No release directory was created"
+          fi
 
       - name: Upload build log after a failure
         if: ${{ failure() }}
