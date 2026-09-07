@@ -1,8 +1,0 @@
---- configure.orig
-+++ configure
-@@ -4285 +4285 @@
--		as_fn_error $? "cross build not supported for $host" "$LINENO" 5
-+		: # allow the iOS cross build
-@@ -4347 +4347 @@
--		as_fn_error $? "cross build not supported for $host" "$LINENO" 5
-+		: # allow the iOS cross build
