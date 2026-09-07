@@ -43,6 +43,7 @@ for product in "${PRODUCTS[@]}"; do
     source_archive="${product%%:*}"
     cache_archive="${product##*:}"
     source_path="$DEPS_DIR/dist/$source_archive"
+    echo "Preparing $cache_archive"
     test -f "$source_path"
     cp "$source_path" "$CACHE_DIR/$cache_archive"
 
@@ -50,7 +51,15 @@ for product in "${PRODUCTS[@]}"; do
     mkdir -p "$product_dir"
     tar -xzf "$CACHE_DIR/$cache_archive" -C "$product_dir"
     while IFS= read -r -d '' library; do
-        lipo -archs "$library" | tr ' ' '\n' | grep -Fxq arm64e
+        architecture_info="$(lipo -info "$library")"
+        echo "$architecture_info"
+        case "$architecture_info" in
+            *arm64e*) ;;
+            *)
+                echo "Missing arm64e architecture in $library" >&2
+                exit 1
+                ;;
+        esac
     done < <(find "$product_dir/lib" -type f -name '*.a' -print0)
 done
 
