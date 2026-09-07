@@ -38,7 +38,7 @@ PY
 }
 
 run_apple build iOS build
-run_apple build iOS "$TARGET"
+run_apple build iOS "$TARGET" -- --disable-test-modules
 PRODUCT="$SOURCE_DIR/cross-build/$TARGET/Apple/iOS/Frameworks/arm64-iphoneos"
 
 mkdir -p "$PREFIX/Frameworks" "$PREFIX/bin" "$PREFIX/lib" "$OUTPUT_DIR"

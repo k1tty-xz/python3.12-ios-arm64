@@ -20,6 +20,8 @@ python-ios_3.14.7-1_iphoneos-arm.deb
 
 `scripts/build.sh` verifies the pinned source checksum, invokes CPython's
 Apple builder for the build machine and arm64 device, and packages the result.
+The documented `--disable-test-modules` option omits CPython's internal test
+suite and test extensions from the device runtime.
 The small `scripts/python.c` launcher uses Python's initialization API and
 keeps stdout/stderr connected to the terminal. Upstream's iOS install provides
 embedding resources, so the launcher is compiled explicitly. Pip is installed
