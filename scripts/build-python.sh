@@ -93,6 +93,9 @@ ac_cv_sizeof_pthread_t=8
 ac_cv_sizeof_pthread_key_t=8
 ac_cv_sizeof_wchar_t=4
 
+# Apple Clang already diagnoses undeclared builtins without an extra flag.
+ac_cv_c_undeclared_builtin_options='none needed'
+
 # Files
 ac_cv_file__dev_ptc=no
 ac_cv_file__dev_ptmx=no
