@@ -6,11 +6,13 @@ standard-library extensions. The result is a Debian package for a jailbreak
 environment, not an App Store application bundle.
 
 The build uses CPython's tagged Apple build driver on a GitHub-hosted macOS
-runner. The runner is pinned to `macos-15` and Xcode 16.4. The device target is
-compiled with an iOS 14.8 deployment target. The official CPython iOS builder
-is used for the normal arm64 build; the arm64e build is a separate clean build
-with an arm64e compiler wrapper, because upstream CPython's official iOS
-matrix currently names the physical-device ABI `arm64`.
+runner. The runner is pinned to the arm64 `macos-14` image and Xcode 15.4,
+because Apple's deployment-target table still includes iOS 14 for Xcode 15.4;
+newer Xcode releases require iOS 15 or later. The device target is compiled
+with an iOS 14.8 deployment target. The official CPython iOS builder is used
+for the normal arm64 build; the arm64e build is a separate clean build with an
+arm64e compiler wrapper, because upstream CPython's official iOS matrix names
+the physical-device ABI `arm64`.
 
 ## Build
 
@@ -56,18 +58,14 @@ package from PyPI into a temporary directory. It intentionally avoids
 `subprocess`: iOS has platform restrictions around process creation even when
 the rootful filesystem is writable.
 
-The simulator test keeps the rest of CPython's fast CI suite but excludes its
-live network-resource tests (`-u-network`), because external FTP services can
-reject a GitHub runner's temporary address even when the build is correct.
-
 The package architecture is deliberately `iphoneos-arm`, which is the Theos
 rootful architecture name. `iphoneos-arm64` is the rootless package
 architecture and is not used for this iOS 14.8 rootful target.
 
 ## What is verified in CI
 
-CI verifies the CPython source archive checksum, builds and tests the official
-arm64 simulator target, builds arm64e separately, creates a fat framework and
-fat native extension files, confirms the Debian metadata, and confirms that
-pip is present. A GitHub-hosted runner cannot reach a phone on a private LAN,
-so the final device test must be run from the WSL host connected to the phone.
+CI verifies the CPython source archive checksum, builds the official arm64
+device target, builds arm64e separately, creates a fat framework and fat native
+extension files, confirms the Debian metadata, and confirms that pip is
+present. A GitHub-hosted runner cannot reach a phone on a private LAN, so the
+final device test must be run from the WSL host connected to the phone.

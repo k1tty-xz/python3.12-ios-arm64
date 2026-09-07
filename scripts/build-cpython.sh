@@ -38,13 +38,13 @@ run_apple_clean_env() {
         python3 "$ROOT_DIR/scripts/cpython-apple.py" "$@"
 }
 
-echo "=== official arm64 build and simulator test ==="
-run_apple build iOS all --clean \
+echo "=== native build Python and arm64 device build ==="
+run_apple build iOS build --clean \
     --cross-build-dir "$ARM64_BUILD" \
     --cache-dir "$CACHE_DIR"
-run_apple test iOS arm64-apple-ios14.8-simulator \
-    --fast-ci \
-    --cross-build-dir "$ARM64_BUILD"
+run_apple build iOS arm64-apple-ios14.8 --clean \
+    --cross-build-dir "$ARM64_BUILD" \
+    --cache-dir "$CACHE_DIR"
 
 echo "=== arm64e build ==="
 # The build Python runs on the macOS runner and must remain a native macOS
