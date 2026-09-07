@@ -37,7 +37,8 @@ jobs:
       - name: Show release files
         run: |
           echo "workspace=$GITHUB_WORKSPACE"
-          find "$GITHUB_WORKSPACE" -maxdepth 4 -type f \( -name '*.deb' -o -name '*.log' \) -print -exec ls -lh {} \;
+          echo "runner_temp=$RUNNER_TEMP"
+          find "$RUNNER_TEMP/python-ios-dist" -maxdepth 2 -type f -print -exec ls -lh {} \;
 
       - name: Upload build log after a failure
         if: ${{ failure() }}
@@ -52,6 +53,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-ios-rootful-${{ github.sha }}
-          path: ${{ github.workspace }}/**/*.deb
+          path: ${{ runner.temp }}/python-ios-dist/*.deb
           if-no-files-found: error
           retention-days: 14

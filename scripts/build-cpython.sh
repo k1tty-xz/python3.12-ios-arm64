@@ -11,6 +11,7 @@ SOURCE_DIR="$BUILD_ROOT/Python-${VERSION}"
 ARM64_BUILD="$BUILD_ROOT/cross-build-arm64"
 ARM64E_BUILD="$BUILD_ROOT/cross-build-arm64e"
 CACHE_DIR="${RUNNER_TEMP:-/tmp}/python-ios-cache"
+OUTPUT_DIR="${RUNNER_TEMP:-/tmp}/python-ios-dist"
 
 mkdir -p "$CACHE_DIR"
 
@@ -67,10 +68,10 @@ echo "=== rootful package ==="
     "$ARM64_BUILD" \
     "$ARM64E_BUILD" \
     "$ARM64E_BUILD/build/python" \
-    "$ROOT_DIR/dist"
+    "$OUTPUT_DIR"
 
 echo "=== final artifact verification ==="
-"$ROOT_DIR/scripts/verify-artifact.sh" "$ROOT_DIR/dist"
+"$ROOT_DIR/scripts/verify-artifact.sh" "$OUTPUT_DIR"
 
 echo "Artifacts:"
-find "$ROOT_DIR/dist" -maxdepth 2 -type f -print
+find "$OUTPUT_DIR" -maxdepth 2 -type f -print
