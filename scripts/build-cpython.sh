@@ -8,8 +8,10 @@ BUILD_ROOT="$(mktemp -d "${RUNNER_TEMP:-/tmp}/python-ios.XXXXXX")"
 SOURCE_ARCHIVE="$BUILD_ROOT/Python-${VERSION}.tar.xz"
 SOURCE_URL="https://www.python.org/ftp/python/${VERSION}/Python-${VERSION}.tar.xz"
 SOURCE_DIR="$BUILD_ROOT/Python-${VERSION}"
-ARM64_BUILD="$BUILD_ROOT/cross-build-arm64"
-ARM64E_BUILD="$BUILD_ROOT/cross-build-arm64e"
+# CPython's Apple package command reports its archive path relative to the
+# source tree, so keep each isolated cross-build directory under that tree.
+ARM64_BUILD="$SOURCE_DIR/cross-build-arm64"
+ARM64E_BUILD="$SOURCE_DIR/cross-build-arm64e"
 CACHE_DIR="${RUNNER_TEMP:-/tmp}/python-ios-cache"
 OUTPUT_DIR="${RUNNER_TEMP:-/tmp}/python-ios-dist"
 
