@@ -1,0 +1,43 @@
+name: Build CPython for rootful iOS 14.8
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'CPYTHON_VERSION'
+      - 'CPYTHON_SHA256'
+      - 'packaging/**'
+      - 'scripts/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Select the pinned Xcode toolchain
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+          xcrun clang --version
+
+      - name: Build CPython, arm64e variant, package, and verify
+        run: |
+          chmod +x scripts/*.sh
+          scripts/build-cpython.sh
+
+      - name: Upload rootful Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-ios-rootful-${{ github.sha }}
+          path: dist/*.deb
+          if-no-files-found: error
+          retention-days: 14
