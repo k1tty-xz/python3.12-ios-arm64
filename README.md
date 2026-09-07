@@ -25,6 +25,12 @@ keeps stdout/stderr connected to the terminal. Upstream's iOS install provides
 embedding resources, so the launcher is compiled explicitly. Pip is installed
 offline from CPython's bundled wheel using the build-machine Python.
 
+The launcher uses the current public `PyConfig_InitPythonConfig`,
+`Py_InitializeFromConfig`, and `Py_RunMain` APIs, as CPython's own CLI does.
+`PyInitConfig` is newer but defaults to isolated embedding; `PyConfig` directly
+provides normal command-line defaults and remains supported in 3.14.
+The launcher build treats deprecated API calls as errors.
+
 CI checks package metadata, standard-library placement, pip, required native
 extensions, arm64 architecture, and code signatures. **A successful build is
 not a device test.** Run the smoke test below on the target phone to verify

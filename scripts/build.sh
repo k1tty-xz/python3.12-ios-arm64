@@ -47,7 +47,7 @@ cp -R "$PRODUCT/lib/python$PYTHON_VERSION" "$PREFIX/lib/"
 ln -s ../Frameworks/Python.framework/Python "$PREFIX/lib/libpython$PYTHON_VERSION.dylib"
 
 # Upstream installs embedding resources and cross-compiler helpers, not a CLI.
-xcrun --sdk iphoneos clang -target "$TARGET" \
+xcrun --sdk iphoneos clang -target "$TARGET" -Werror=deprecated-declarations \
     -I"$PRODUCT/Python.framework/Headers" \
     -F"$PRODUCT" -framework Python \
     -Wl,-rpath,@executable_path/../Frameworks \
@@ -58,7 +58,7 @@ ln -s python3 "$PREFIX/bin/python"
 # Install the bundled wheel offline with the macOS build Python. Do not run
 # ensurepip on iOS, where its subprocess-based bootstrap is unavailable.
 BUILD_PYTHON="$SOURCE_DIR/cross-build/build/python"
-if [ ! -x "$BUILD_PYTHON" ]; then
+if [ ! -f "$BUILD_PYTHON" ]; then
     BUILD_PYTHON="$BUILD_PYTHON.exe"
 fi
 PIP_WHEEL=("$SOURCE_DIR"/Lib/ensurepip/_bundled/pip-*.whl)
