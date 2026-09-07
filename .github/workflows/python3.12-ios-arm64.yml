@@ -5,7 +5,9 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    # macOS 13 was retired by GitHub Actions. Keep an Intel host for the
+    # cross-build and use the supported macOS 15 Intel image.
+    runs-on: macos-15-intel
     timeout-minutes: 30
     concurrency:
       group: ios-python3.12-arm64-${{ github.ref }}
