@@ -63,7 +63,7 @@ To build this package yourself, you can use the provided GitHub Actions workflow
 3.  **Set up environment variables**:
     ```bash
     export PY_VER=3.12.5
-    export LIBFFI_VER=3.4.4
+    export LIBFFI_VER=3.4.8
     export MIN_IOS=14.5
     export PYTHON_FOR_BUILD=$(which python3.12 || which python3)
     ```

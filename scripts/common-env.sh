@@ -55,4 +55,4 @@ export LDFLAGS="-arch arm64 -isysroot ${IOS_SDK} -miphoneos-version-min=${MIN_IO
 # Exports
 # ------------------------------------------------------------------------------
 # Export variables for use in child scripts.
-export JOBS WORKDIR DEPS BUILD STAGE IOS_SDK HOST_TRIPLE
+export JOBS WORKDIR DEPS BUILD STAGE IOS_SDK HOST_TRIPLE CC CXX AR RANLIB STRIP

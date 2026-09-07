@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - **Documentation**: Added post-install instructions for `pip` and PATH setup.
 
 ### Changed
+- **CI/CD**: Updated the macOS toolchain actions to Node 24-compatible releases and libffi to 3.4.8 for current Apple assembler compatibility.
 - **Requirements**: Bumped minimum iOS version to 14.5.
 - **Packaging**: Updated package metadata to reflect that `pip` is installed on-demand.
 - **Assets**: Updated AppIcon to a new standard design.

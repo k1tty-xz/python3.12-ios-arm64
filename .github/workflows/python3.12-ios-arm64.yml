@@ -14,7 +14,7 @@ jobs:
       cancel-in-progress: true
     env:
       PY_VER: 3.12.5
-      LIBFFI_VER: 3.4.4
+      LIBFFI_VER: 3.4.8
       MIN_IOS: 14.5
       OPENSSL_BRANCH: OpenSSL_1_1_1-stable  # Used for cache key; actual version pinned in build-openssl.sh
 
@@ -23,7 +23,7 @@ jobs:
       # Checkout repository
       # ---------------------------------------------
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ---------------------------------------------
       # Discover iOS SDK version (for caching/debug)
@@ -37,7 +37,7 @@ jobs:
       # Restore dependency cache (OpenSSL, libffi)
       # ---------------------------------------------
       - name: Restore deps cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             work/deps/openssl-ios
@@ -59,7 +59,7 @@ jobs:
       # ---------------------------------------------
       - name: Set up Python 3.12 for host build
         id: py
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -70,7 +70,7 @@ jobs:
       - name: Build Python 3.12 for iOS and package .deb
         env:
           PY_VER: 3.12.5
-          LIBFFI_VER: 3.4.4
+          LIBFFI_VER: 3.4.8
           MIN_IOS: 14.5
           OPENSSL_BRANCH: OpenSSL_1_1_1-stable
         run: |
@@ -94,7 +94,7 @@ jobs:
       # Upload artifact (.deb)
       # ---------------------------------------------
       - name: Upload .deb artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python3.12_${{ env.PY_VER }}_iphoneos-arm
           path: work/python3.12_${{ env.PY_VER }}-1_iphoneos-arm.deb
