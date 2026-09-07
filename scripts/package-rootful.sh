@@ -111,7 +111,8 @@ test -n "$PIP_SITE"
 test -n "$PIP_BIN"
 mkdir -p "$LIB_DIR/site-packages"
 cp -R "$PIP_SITE/." "$LIB_DIR/site-packages/"
-for pip_script in pip pip3 "pip$VERSION"; do
+PYTHON_MINOR="${VERSION%.*}"
+for pip_script in pip pip3 "pip$PYTHON_MINOR"; do
     test -f "$PIP_BIN/$pip_script"
     cp "$PIP_BIN/$pip_script" "$BIN_DIR/$pip_script"
     sed -i '' '1s|^#!.*$|#!/usr/local/bin/python3.14|' "$BIN_DIR/$pip_script"

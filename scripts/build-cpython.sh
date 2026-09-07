@@ -13,6 +13,7 @@ SOURCE_DIR="$BUILD_ROOT/Python-${VERSION}"
 ARM64_BUILD="$SOURCE_DIR/cross-build-arm64"
 ARM64E_BUILD="$SOURCE_DIR/cross-build-arm64e"
 CACHE_DIR="${RUNNER_TEMP:-/tmp}/python-ios-cache"
+ARM64E_CACHE_DIR="${RUNNER_TEMP:-/tmp}/python-ios-cache-arm64e"
 OUTPUT_DIR="${RUNNER_TEMP:-/tmp}/python-ios-dist"
 
 mkdir -p "$CACHE_DIR"
@@ -48,9 +49,10 @@ run_apple test iOS arm64-apple-ios14.8-simulator \
 echo "=== arm64e build ==="
 # The build Python runs on the macOS runner and must remain a native macOS
 # binary. Only the target build gets the arm64e compiler wrappers.
+"$ROOT_DIR/scripts/build-arm64e-deps.sh" "$ARM64E_CACHE_DIR" "$BUILD_ROOT"
 run_apple_clean_env build iOS build --clean \
     --cross-build-dir "$ARM64E_BUILD" \
-    --cache-dir "$CACHE_DIR"
+    --cache-dir "$ARM64E_CACHE_DIR"
 
 export IOS_SDK_VERSION=""
 export IPHONEOS_DEPLOYMENT_TARGET="14.8"
@@ -63,7 +65,7 @@ export LDFLAGS="-arch arm64e"
 
 run_apple build iOS arm64-apple-ios14.8 --clean \
     --cross-build-dir "$ARM64E_BUILD" \
-    --cache-dir "$CACHE_DIR"
+    --cache-dir "$ARM64E_CACHE_DIR"
 
 echo "=== rootful package ==="
 "$ROOT_DIR/scripts/package-rootful.sh" \
