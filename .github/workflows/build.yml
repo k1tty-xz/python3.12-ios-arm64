@@ -7,7 +7,6 @@ on:
       - '.github/workflows/build.yml'
       - 'CPYTHON_VERSION'
       - 'CPYTHON_SHA256'
-      - 'CPYTHON_APPLE_DEPS_COMMIT'
       - 'packaging/**'
       - 'scripts/**'
 
@@ -32,7 +31,10 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-path
 
-      - name: Build CPython arm64 and arm64e package
+      - name: Install Debian packaging tools
+        run: brew install dpkg
+
+      - name: Build CPython arm64 package
         run: ./scripts/build.sh
 
       - name: Upload rootful Debian package

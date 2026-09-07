@@ -4,7 +4,7 @@ set -e
 # iOS 14 rootful jailbreaks commonly provide the CA bundle at this path while
 # OpenSSL's default lookup uses /etc/ssl/cert.pem. Only add the link when the
 # standard path is absent; never replace an administrator-provided file.
-if [ ! -e /etc/ssl/cert.pem ] && [ -r /etc/ssl/certs/cacert.pem ]; then
+if [ ! -e /etc/ssl/cert.pem ] && [ ! -L /etc/ssl/cert.pem ] && [ -r /etc/ssl/certs/cacert.pem ]; then
     ln -s /etc/ssl/certs/cacert.pem /etc/ssl/cert.pem
 fi
 
