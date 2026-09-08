@@ -66,6 +66,7 @@ if [ ! -f "$BUILD_PYTHON" ]; then
 fi
 printf '%s\n' "$BUILD_PYTHON" > "$OUTPUT_DIR/.build-python"
 printf '%s\n' "$SOURCE_DIR/Lib" > "$OUTPUT_DIR/.build-python-lib"
+printf '%s\n' "$PRODUCT/Python.framework" > "$OUTPUT_DIR/.python-framework"
 PIP_WHEEL=("$SOURCE_DIR"/Lib/ensurepip/_bundled/pip-*.whl)
 PYTHONPATH="${PIP_WHEEL[0]}" "$BUILD_PYTHON" -m pip --isolated install \
     --no-index --no-deps --ignore-installed --no-compile \
