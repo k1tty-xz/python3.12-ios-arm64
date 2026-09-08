@@ -41,6 +41,7 @@ test -x "$BUILD_PYTHON"
 PIP_WHEEL=("$BUILD_PYTHON_LIB"/ensurepip/_bundled/pip-*.whl)
 test -f "${PIP_WHEEL[0]}"
 
+mkdir -p "$PYTHON_ROOT"
 dpkg-deb --extract "$PYTHON_PACKAGE" "$PYTHON_ROOT"
 PYTHON_FRAMEWORK="$PYTHON_ROOT/usr/local/Frameworks/Python.framework"
 test -f "$PYTHON_FRAMEWORK/Headers/Python.h"
