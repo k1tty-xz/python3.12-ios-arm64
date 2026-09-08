@@ -21,6 +21,8 @@ ssh root@PHONE 'dpkg -i /tmp/frida-ios_17.17.0-1_iphoneos-arm.deb'
 Replace `PHONE` with the phone's hostname or IP address. The phone needs a
 rootful jailbreak, `dpkg`, and `ca-certificates`.
 
+The Frida package is optional; Python works without it.
+
 Add the installed commands to the current shell:
 
 ```sh
