@@ -26,6 +26,8 @@ The small `scripts/python.c` launcher uses Python's initialization API and
 keeps stdout/stderr connected to the terminal. Upstream's iOS install provides
 embedding resources, so the launcher is compiled explicitly. Pip is installed
 offline from CPython's bundled wheel using the build-machine Python.
+UIKit is a required launcher dependency because CPython's iOS platform
+detection uses `UIDevice`; no Python module patches are needed.
 
 The launcher uses the current public `PyConfig_InitPythonConfig`,
 `Py_InitializeFromConfig`, and `Py_RunMain` APIs, as CPython's own CLI does.

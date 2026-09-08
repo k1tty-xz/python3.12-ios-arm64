@@ -23,6 +23,7 @@ import bz2
 import ctypes
 import hashlib
 import lzma
+import platform
 import sqlite3
 import ssl
 import zlib
@@ -31,6 +32,7 @@ from decimal import Decimal
 
 assert sys.prefix == "/usr/local"
 assert sys.version_info[:3] == (3, 14, 7)
+assert platform.ios_ver().system == "iOS"
 assert sqlite3.connect(":memory:").execute("select 42").fetchone() == (42,)
 ctypes.CDLL(None)
 assert Decimal("0.1") + Decimal("0.2") == Decimal("0.3")

@@ -47,9 +47,12 @@ cp -R "$PRODUCT/lib/python$PYTHON_VERSION" "$PREFIX/lib/"
 ln -s ../Frameworks/Python.framework/Python "$PREFIX/lib/libpython$PYTHON_VERSION.dylib"
 
 # Upstream installs embedding resources and cross-compiler helpers, not a CLI.
+# Its platform detection uses UIDevice via ctypes, so UIKit must remain linked
+# even though this C launcher does not reference UIKit symbols directly.
 xcrun --sdk iphoneos clang -target "$TARGET" -Werror=deprecated-declarations \
     -I"$PRODUCT/Python.framework/Headers" \
     -F"$PRODUCT" -framework Python \
+    -Wl,-needed_framework,UIKit \
     -Wl,-rpath,@executable_path/../Frameworks \
     "$ROOT_DIR/scripts/python.c" -o "$PREFIX/bin/python$PYTHON_VERSION"
 ln -s "python$PYTHON_VERSION" "$PREFIX/bin/python3"
