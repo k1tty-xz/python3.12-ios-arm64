@@ -221,9 +221,14 @@ while IFS= read -r -d '' native; do
     lipo "$native" -verify_arch arm64
     codesign -f -s - --timestamp=none "$native"
     codesign --verify "$native"
-done < <(find "$PREFIX" "$PKG_ROOT/usr/sbin" "$PKG_ROOT/usr/lib/frida-1.0" -type f \( \
-    -name '*.so' -o -name frida-server -o -name frida-agent.dylib \
-\) -print0)
+done < <(find "$PREFIX" "$PKG_ROOT/usr/lib/frida-1.0" -type f \( \
+    -name '*.so' -o -name frida-agent.dylib \
+    \) -print0)
+
+# Keep the entitlements shipped with Frida's official iOS server. Re-signing
+# it ad hoc removes the permissions required for FBS spawning and debugging.
+lipo "$PKG_ROOT/usr/sbin/frida-server" -verify_arch arm64
+codesign --verify "$PKG_ROOT/usr/sbin/frida-server"
 
 dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$PACKAGE"
 VERIFY="$BUILD_ROOT/verify"
