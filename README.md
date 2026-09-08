@@ -1,107 +1,61 @@
-# CPython for rootful iOS 14.8
+# CPython for rootful iOS
 
-Build CPython 3.14.7 as an **arm64 command-line runtime** for a rootful iOS
-14.8 jailbreak. The Debian package installs Python, its available iOS standard
-library, and pip under `/usr/local`.
-
-Arm64 is CPython's supported physical-device architecture and also runs on
-arm64e-capable phones. This runtime uses one arm64 build and upstream binary
-dependencies; it does not need a second arm64e build or universal binaries.
+This project builds CPython 3.14.7 as an arm64 command-line runtime for a
+rootful iOS 14.8 jailbreak. The Debian package installs Python and pip under
+`/usr/local`.
 
 ## Build
 
-Run the **Build CPython for rootful iOS 14.8** GitHub Actions workflow, or push
-a change to its build inputs. The workflow uses macOS 14 with Xcode 15.4 to
-retain an iOS 14.8 deployment target. It produces:
+Run the **Build CPython for rootful iOS 14.8** GitHub Actions workflow. It uses
+macOS 14 with Xcode 15.4 and produces:
 
 ```text
 python-ios_3.14.7-1_iphoneos-arm.deb
 ```
 
-`scripts/build.sh` verifies the pinned source checksum, invokes CPython's
-Apple builder for the build machine and arm64 device, and packages the result.
-The documented `--disable-test-modules` option omits CPython's internal test
-suite and test extensions from the device runtime.
-The small `scripts/python.c` launcher uses Python's initialization API and
-keeps stdout/stderr connected to the terminal. Upstream's iOS install provides
-embedding resources, so the launcher is compiled explicitly. Pip is installed
-offline from CPython's bundled wheel using the build-machine Python.
-UIKit is a required launcher dependency because CPython's iOS platform
-detection uses `UIDevice`; no Python module patches are needed.
+The single build script downloads and verifies CPython, uses CPython's Apple
+builder for the arm64 device target, builds the command-line launcher, stages
+pip from the bundled wheel, and verifies the Debian package.
 
-The launcher uses the current public `PyConfig_InitPythonConfig`,
-`Py_InitializeFromConfig`, and `Py_RunMain` APIs, as CPython's own CLI does.
-`PyInitConfig` is newer but defaults to isolated embedding; `PyConfig` directly
-provides normal command-line defaults and remains supported in 3.14.
-The launcher build treats deprecated API calls as errors.
+## Install
 
-CI checks package metadata, standard-library placement, pip, required native
-extensions, arm64 architecture, and code signatures. **A successful build is
-not a device test.** Run the smoke test below on the target phone to verify
-startup, imports, terminal I/O, exit codes, and a package installation.
-
-## Install and test
-
-The phone needs a rootful jailbreak, `dpkg`, and `ca-certificates`. From WSL
-on the phone's network, after downloading the Actions artifact:
+Copy the package and smoke test to the phone, then install and run the test:
 
 ```sh
-scp python-ios_3.14.7-1_iphoneos-arm.deb root@192.168.1.244:/tmp/
-ssh root@192.168.1.244 'dpkg -i /tmp/python-ios_3.14.7-1_iphoneos-arm.deb'
-scp scripts/device-smoke.sh root@192.168.1.244:/tmp/
-ssh root@192.168.1.244 'sh /tmp/device-smoke.sh'
+scp python-ios_3.14.7-1_iphoneos-arm.deb root@PHONE:/tmp/
+scp scripts/device-smoke.sh root@PHONE:/tmp/
+ssh root@PHONE 'dpkg -i /tmp/python-ios_3.14.7-1_iphoneos-arm.deb'
+ssh root@PHONE 'sh /tmp/device-smoke.sh'
 ```
 
-If `dpkg` reports a missing `ca-certificates` dependency, install it with the
-phone's package manager, then rerun the installation. The post-install script
-links the existing certificate bundle only when `/etc/ssl/cert.pem` is absent.
-
-```sh
-/usr/local/bin/python3
-/usr/local/bin/python3 my_script.py
-/usr/local/bin/python3 -m pip install --only-binary=:all: six
-```
-
-If your shell does not include `/usr/local/bin` in its search path, enable
-the shorter commands for the current session with:
+The phone needs a rootful jailbreak, `dpkg`, and `ca-certificates`. Add the
+runtime to the shell path if needed:
 
 ```sh
 export PATH="/usr/local/bin:$PATH"
-python3
+python3 --version
+python3 my_script.py
+python3 -m pip install --only-binary=:all: six
 ```
 
 The package provides `python`, `python3`, `python3.14`, `pip`, `pip3`, and
-`pip3.14` in `/usr/local/bin`. The standard library lives at
-`/usr/local/lib/python3.14`, and the runtime framework at
-`/usr/local/Frameworks/Python.framework`.
+`pip3.14`. The standard library is in `/usr/local/lib/python3.14`.
 
-## Platform limits and official references
+## Limits
 
-CPython officially supports iOS through embedding in an application. This
-repository adapts that runtime for a jailbreak shell; it is not an App Store
-bundle or a desktop Python port. Upstream disables subprocess creation,
-multiprocessing, and several desktop modules on iOS. `venv` with pip bootstrap
-and source-package builds that launch subprocesses are therefore unavailable.
-Use pure-Python wheels; native packages additionally need compatible iOS
-binaries and signing. The package architecture is `iphoneos-arm`, the rootful
-Debian architecture, even though the executable itself is arm64.
+CPython's official iOS support is for embedding in an application. This
+project adapts that runtime for a jailbreak shell. iOS builds do not support
+subprocess creation or multiprocessing, and some desktop modules are omitted.
+Use pure-Python wheels; native packages need compatible iOS binaries.
 
-The implementation follows these primary references:
+The package architecture is `iphoneos-arm` (the rootful Debian name); the
+executable architecture is arm64. A successful GitHub Actions build does not
+replace the device smoke test.
 
-- [Python on iOS](https://docs.python.org/3.14/using/ios.html) and
-  [PEP 730](https://peps.python.org/pep-0730/): supported runtime and platform limits.
-- [CPython 3.14.7 Apple builder](https://github.com/python/cpython/blob/v3.14.7/Apple/__main__.py),
-  [configure rules](https://github.com/python/cpython/blob/v3.14.7/configure.ac), and
-  [install rules](https://github.com/python/cpython/blob/v3.14.7/Makefile.pre.in):
-  device target, dependencies, and installed framework layout.
-- [Python initialization configuration](https://docs.python.org/3.14/c-api/init_config.html):
-  command-line arguments, terminal logging, and `Py_RunMain`.
-- [ensurepip availability](https://docs.python.org/3.14/library/ensurepip.html) and
-  [pip install options](https://pip.pypa.io/en/stable/cli/pip_install/): offline
-  bootstrap on the build machine and wheel-only installation on the phone.
-- [Apple Xcode requirements](https://developer.apple.com/xcode/system-requirements) and
-  [GitHub macOS 14 runner image](https://github.com/actions/runner-images/blob/main/images/macos/macos-14-arm64-Readme.md):
-  Xcode 15.4 and iOS 14 deployment support.
-- [Theos packaging](https://theos.dev/docs/packaging) and
-  [arm64e deployment](https://theos.dev/docs/arm64e-deployment): jailbreak package
-  architecture and when an arm64e ABI is needed.
+## References
+
+- [Python on iOS](https://docs.python.org/3.14/using/ios.html)
+- [PEP 730: Adding iOS as a supported platform](https://peps.python.org/pep-0730/)
+- [CPython Apple build driver](https://github.com/python/cpython/blob/v3.14.7/Apple/__main__.py)
+- [Python initialization configuration](https://docs.python.org/3.14/c-api/init_config.html)
+- [Apple Xcode system requirements](https://developer.apple.com/xcode/system-requirements)
