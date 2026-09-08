@@ -114,7 +114,7 @@ xcrun --sdk iphoneos clang -target "$TARGET" \
     -F"$(dirname "$PYTHON_FRAMEWORK")" -framework Python \
     "$FRIDA_EXTENSION_OBJECT" "$FRIDA_CORE/libfrida-core.a" \
     -lbsm -ldl -lm -lresolv \
-    -framework Foundation -framework CoreFoundation -framework CoreGraphics -framework UIKit \
+    -framework Foundation -framework CoreFoundation -framework CoreGraphics -framework SystemConfiguration -framework UIKit \
     -o "$FRIDA_EXTENSION"
 
 cp "$FRIDA_GEN/__init__.py" "$FRIDA_SITE/frida/"
