@@ -19,13 +19,11 @@ pip from the bundled wheel, and verifies the Debian package.
 
 ## Install
 
-Copy the package and smoke test to the phone, then install and run the test:
+Copy the package to the phone and install it with `dpkg`:
 
 ```sh
 scp python-ios_3.14.7-1_iphoneos-arm.deb root@PHONE:/tmp/
-scp scripts/device-smoke.sh root@PHONE:/tmp/
 ssh root@PHONE 'dpkg -i /tmp/python-ios_3.14.7-1_iphoneos-arm.deb'
-ssh root@PHONE 'sh /tmp/device-smoke.sh'
 ```
 
 The phone needs a rootful jailbreak, `dpkg`, and `ca-certificates`. Add the
@@ -49,8 +47,7 @@ subprocess creation or multiprocessing, and some desktop modules are omitted.
 Use pure-Python wheels; native packages need compatible iOS binaries.
 
 The package architecture is `iphoneos-arm` (the rootful Debian name); the
-executable architecture is arm64. A successful GitHub Actions build does not
-replace the device smoke test.
+executable architecture is arm64.
 
 ## References
 
