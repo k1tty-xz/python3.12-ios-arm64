@@ -62,6 +62,14 @@ links the existing certificate bundle only when `/etc/ssl/cert.pem` is absent.
 /usr/local/bin/python3 -m pip install --only-binary=:all: six
 ```
 
+If your shell does not include `/usr/local/bin` in its search path, enable
+the shorter commands for the current session with:
+
+```sh
+export PATH="/usr/local/bin:$PATH"
+python3
+```
+
 The package provides `python`, `python3`, `python3.14`, `pip`, `pip3`, and
 `pip3.14` in `/usr/local/bin`. The standard library lives at
 `/usr/local/lib/python3.14`, and the runtime framework at
