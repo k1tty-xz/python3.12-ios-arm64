@@ -1,20 +1,21 @@
 # Python and Frida for a jailbroken iPhone
 
-This package gives a rootful jailbroken iPhone or iPad running iOS 14.8 or
-newer a working Python 3.14 command line, pip, Frida's Python API, and Frida's
-command line tools.
+These packages give a rootful jailbroken iPhone or iPad running iOS 14.8 or
+newer a working Python 3.14 command line and an optional Frida installation.
 
-It is a Debian package for a jailbreak terminal. It is not an App Store app.
+They are Debian packages for a jailbreak terminal. They are not App Store apps.
 
 ## Install
 
 Download the latest `python-ios-rootful-*` artifact from the
 [GitHub Actions build](https://github.com/k1tty-xz/python-ios/actions/workflows/build.yml),
-then copy the Debian package to the phone:
+then copy both Debian packages to the phone:
 
 ```sh
 scp python-ios_3.14.7-1_iphoneos-arm.deb root@PHONE:/tmp/
+scp frida-ios_17.17.0-1_iphoneos-arm.deb root@PHONE:/tmp/
 ssh root@PHONE 'dpkg -i /tmp/python-ios_3.14.7-1_iphoneos-arm.deb'
+ssh root@PHONE 'dpkg -i /tmp/frida-ios_17.17.0-1_iphoneos-arm.deb'
 ```
 
 Replace `PHONE` with the phone's hostname or IP address. The phone needs a
@@ -40,9 +41,9 @@ Packages with native code need an arm64 iOS wheel built for this Python.
 
 ## Frida on the phone
 
-The package already contains Frida 17.17.0, so do not install `frida` or
-`frida-tools` from pip on the phone. The command line tools and Python API use
-the phone's local Frida device directly:
+The separate Frida package contains Frida 17.17.0. Install it after Python;
+do not install `frida` or `frida-tools` from pip on the phone. The command line
+tools and Python API use the phone's local Frida device directly:
 
 ```sh
 frida-ps
@@ -79,7 +80,7 @@ phone generally cannot compile native Python extensions itself.
 
 ## Build
 
-The package is built by the
+The packages are built by the
 [GitHub Actions workflow](https://github.com/k1tty-xz/python-ios/actions/workflows/build.yml)
 on macOS with Xcode. The build follows Python's
 [iOS documentation](https://docs.python.org/3.14/using/ios.html) and

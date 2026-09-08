@@ -37,10 +37,13 @@ jobs:
       - name: Install Debian packaging tools
         run: brew install dpkg
 
-      - name: Build CPython and Frida arm64 package
+      - name: Build CPython arm64 package
         run: ./scripts/build.sh
 
-      - name: Upload rootful Debian package
+      - name: Build Frida arm64 package
+        run: ./scripts/build-frida.sh
+
+      - name: Upload rootful Debian packages
         uses: actions/upload-artifact@v7
         with:
           name: python-ios-rootful-${{ github.sha }}

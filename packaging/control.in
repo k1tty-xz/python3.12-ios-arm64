@@ -1,11 +1,9 @@
 Package: com.python.ios
-Name: CPython and Frida for iOS
+Name: CPython for iOS
 Version: @VERSION@-1
 Architecture: iphoneos-arm
-Description: CPython @VERSION@ and Frida runtime for rootful iOS
+Description: CPython @VERSION@ command-line runtime for rootful iOS
 Maintainer: python-ios project
 Section: Development
 Priority: optional
 Depends: firmware (>= 14.8), ca-certificates
-Conflicts: re.frida.server, re.frida.server64
-Replaces: re.frida.server, re.frida.server64
