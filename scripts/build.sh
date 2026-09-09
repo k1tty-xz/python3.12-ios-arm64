@@ -23,6 +23,32 @@ printf '%s  %s\n' "$(cat "$ROOT_DIR/CPYTHON_SHA256")" "$BUILD_ROOT/Python.tar.xz
 tar -xf "$BUILD_ROOT/Python.tar.xz" -C "$BUILD_ROOT"
 cd "$SOURCE_DIR"
 
+# This package targets a rootful jailbreak rather than a sandboxed iOS app.
+# Enable CPython's POSIX subprocess implementation so pip can run build
+# isolation and pure-Python source builds on the phone. Keep the edits narrow
+# and fail if the pinned CPython source no longer matches them.
+python3 - "$SOURCE_DIR/Lib/subprocess.py" "$SOURCE_DIR/configure" <<'PY'
+from pathlib import Path
+import sys
+
+subprocess_path = Path(sys.argv[1])
+configure_path = Path(sys.argv[2])
+
+subprocess = subprocess_path.read_text()
+old = '_can_fork_exec = sys.platform not in {"emscripten", "wasi", "ios", "tvos", "watchos"}'
+new = '_can_fork_exec = sys.platform not in {"emscripten", "wasi", "tvos", "watchos"}'
+if subprocess.count(old) != 1:
+    raise SystemExit(f"unexpected subprocess guard in {subprocess_path}")
+subprocess_path.write_text(subprocess.replace(old, new, 1))
+
+configure = configure_path.read_text()
+needle = "    py_cv_module__posixsubprocess=n/a\n"
+if configure.count(needle) < 1:
+    raise SystemExit(f"unexpected _posixsubprocess configure entry in {configure_path}")
+configure = configure.replace(needle, "", 1)
+configure_path.write_text(configure)
+PY
+
 # Upstream defaults to iOS 13. Name the documented deployment target in its
 # device host triple; use the tagged builder unchanged for everything else.
 run_apple() {
@@ -44,6 +70,10 @@ PRODUCT="$SOURCE_DIR/cross-build/$TARGET/Apple/iOS/Frameworks/arm64-iphoneos"
 mkdir -p "$PREFIX/Frameworks" "$PREFIX/bin" "$PREFIX/lib" "$OUTPUT_DIR"
 cp -R "$PRODUCT/Python.framework" "$PREFIX/Frameworks/"
 cp -R "$PRODUCT/lib/python$PYTHON_VERSION" "$PREFIX/lib/"
+# CPython's build leaves optimized bytecode caches for the build host. They
+# are not portable to the phone and Python can regenerate them on demand.
+find "$PREFIX/lib/python$PYTHON_VERSION" -type d -name __pycache__ \
+    -prune -exec rm -rf {} +
 ln -s ../Frameworks/Python.framework/Python "$PREFIX/lib/libpython$PYTHON_VERSION.dylib"
 
 # Upstream installs embedding resources and cross-compiler helpers, not a CLI.
@@ -101,7 +131,7 @@ test -x "$PREFIX/bin/pip$PYTHON_VERSION"
 test -f "$LIB_DIR/encodings/__init__.py"
 test -f "$LIB_DIR/os.py"
 test -f "$LIB_DIR/site-packages/pip/__main__.py"
-for module in _ssl _hashlib _ctypes _sqlite3 _bz2 _lzma _decimal _zstd zlib; do
+for module in _ssl _hashlib _ctypes _sqlite3 _bz2 _lzma _decimal _zstd _posixsubprocess zlib; do
     extensions=("$LIB_DIR/lib-dynload/$module".*.so)
     test -f "${extensions[0]}"
 done
