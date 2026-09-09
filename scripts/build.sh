@@ -6,7 +6,7 @@ VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/CPYTHON_VERSION")"
 PYTHON_VERSION="${VERSION%.*}"
 BUILD_ROOT="$(mktemp -d "${RUNNER_TEMP:-/tmp}/python-ios.XXXXXX")"
 SOURCE_DIR="$BUILD_ROOT/Python-$VERSION"
-TARGET="arm64-apple-ios14.8"
+TARGET="arm64-apple-ios"
 OUTPUT_DIR="${RUNNER_TEMP:-/tmp}/python-ios-dist"
 PKG_ROOT="$BUILD_ROOT/package"
 PREFIX="$PKG_ROOT/usr/local"
@@ -46,21 +46,8 @@ configure = configure.replace(needle, "", 1)
 configure_path.write_text(configure)
 PY
 
-# Set the device deployment target; the upstream default is iOS 13.
-run_apple() {
-    python3 - "$@" <<'PY'
-import runpy
-
-builder = runpy.run_path("Apple/__main__.py")
-builder["HOSTS"]["iOS"]["ios-arm64"] = {
-    "arm64-apple-ios14.8": "arm64-iphoneos",
-}
-builder["main"]()
-PY
-}
-
-run_apple build iOS build
-run_apple build iOS "$TARGET" -- --disable-test-modules
+python3 Apple/__main__.py build iOS build
+python3 Apple/__main__.py build iOS "$TARGET" -- --disable-test-modules
 PRODUCT="$SOURCE_DIR/cross-build/$TARGET/Apple/iOS/Frameworks/arm64-iphoneos"
 
 mkdir -p "$PREFIX/Frameworks" "$PREFIX/bin" "$PREFIX/lib" "$OUTPUT_DIR"
@@ -71,7 +58,8 @@ find "$PREFIX/lib/python$PYTHON_VERSION" -type d -name __pycache__ \
 ln -s ../Frameworks/Python.framework/Python "$PREFIX/lib/libpython$PYTHON_VERSION.dylib"
 
 # Build the terminal launcher; CPython's iOS config also needs UIKit linked.
-xcrun --sdk iphoneos clang -target "$TARGET" -Werror=deprecated-declarations \
+xcrun --sdk iphoneos clang -target "$TARGET" -mios-version-min=13.0 \
+    -Werror=deprecated-declarations \
     -I"$PRODUCT/Python.framework/Headers" \
     -F"$PRODUCT" -framework Python \
     -Wl,-needed_framework,UIKit \
