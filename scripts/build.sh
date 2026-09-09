@@ -23,10 +23,7 @@ printf '%s  %s\n' "$(cat "$ROOT_DIR/CPYTHON_SHA256")" "$BUILD_ROOT/Python.tar.xz
 tar -xf "$BUILD_ROOT/Python.tar.xz" -C "$BUILD_ROOT"
 cd "$SOURCE_DIR"
 
-# This package targets a rootful jailbreak rather than a sandboxed iOS app.
-# Enable CPython's POSIX subprocess implementation so pip can run build
-# isolation and pure-Python source builds on the phone. Keep the edits narrow
-# and fail if the pinned CPython source no longer matches them.
+# Rootful iOS can run POSIX subprocesses, which pip needs for source builds.
 python3 - "$SOURCE_DIR/Lib/subprocess.py" "$SOURCE_DIR/configure" <<'PY'
 from pathlib import Path
 import sys
@@ -49,8 +46,7 @@ configure = configure.replace(needle, "", 1)
 configure_path.write_text(configure)
 PY
 
-# Upstream defaults to iOS 13. Name the documented deployment target in its
-# device host triple; use the tagged builder unchanged for everything else.
+# Set the device deployment target; the upstream default is iOS 13.
 run_apple() {
     python3 - "$@" <<'PY'
 import runpy
@@ -70,15 +66,11 @@ PRODUCT="$SOURCE_DIR/cross-build/$TARGET/Apple/iOS/Frameworks/arm64-iphoneos"
 mkdir -p "$PREFIX/Frameworks" "$PREFIX/bin" "$PREFIX/lib" "$OUTPUT_DIR"
 cp -R "$PRODUCT/Python.framework" "$PREFIX/Frameworks/"
 cp -R "$PRODUCT/lib/python$PYTHON_VERSION" "$PREFIX/lib/"
-# CPython's build leaves optimized bytecode caches for the build host. They
-# are not portable to the phone and Python can regenerate them on demand.
 find "$PREFIX/lib/python$PYTHON_VERSION" -type d -name __pycache__ \
     -prune -exec rm -rf {} +
 ln -s ../Frameworks/Python.framework/Python "$PREFIX/lib/libpython$PYTHON_VERSION.dylib"
 
-# Upstream installs embedding resources and cross-compiler helpers, not a CLI.
-# Its platform detection uses UIDevice via ctypes, so UIKit must remain linked
-# even though this C launcher does not reference UIKit symbols directly.
+# Build the terminal launcher; CPython's iOS config also needs UIKit linked.
 xcrun --sdk iphoneos clang -target "$TARGET" -Werror=deprecated-declarations \
     -I"$PRODUCT/Python.framework/Headers" \
     -F"$PRODUCT" -framework Python \
@@ -88,8 +80,7 @@ xcrun --sdk iphoneos clang -target "$TARGET" -Werror=deprecated-declarations \
 ln -s "python$PYTHON_VERSION" "$PREFIX/bin/python3"
 ln -s python3 "$PREFIX/bin/python"
 
-# Install the bundled wheel offline with the macOS build Python. Do not run
-# ensurepip on iOS, where its subprocess-based bootstrap is unavailable.
+# Install the bundled wheel offline with the host build Python.
 BUILD_PYTHON="$SOURCE_DIR/cross-build/build/python"
 if [ ! -f "$BUILD_PYTHON" ]; then
     BUILD_PYTHON="$BUILD_PYTHON.exe"
@@ -109,7 +100,7 @@ mkdir -p "$PKG_ROOT/DEBIAN"
 sed "s/@VERSION@/$VERSION/g" "$ROOT_DIR/packaging/control.in" > "$PKG_ROOT/DEBIAN/control"
 install -m 755 "$ROOT_DIR/packaging/postinst" "$PKG_ROOT/DEBIAN/postinst"
 
-# Validate and sign every shipped native binary, including all extensions.
+# Strip, validate, and sign each shipped native binary.
 while IFS= read -r -d '' native; do
     lipo "$native" -verify_arch arm64
     xcrun --sdk iphoneos strip -x "$native"

@@ -15,8 +15,6 @@ permissions:
 
 jobs:
   build:
-    # macOS 14 arm64 still provides Xcode 15.4, whose deployment-target range
-    # includes iOS 14. Newer Xcode releases require iOS 15 or later.
     runs-on: macos-14
     timeout-minutes: 180
     env:

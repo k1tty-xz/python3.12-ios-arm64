@@ -3,7 +3,7 @@ Name: CPython for iOS
 Version: @VERSION@-1
 Architecture: iphoneos-arm
 Description: CPython @VERSION@ command-line runtime for rootful iOS
-Maintainer: python-ios project
+Maintainer: k1tty-xz
 Section: Development
 Priority: optional
 Depends: firmware (>= 14.8), ca-certificates
