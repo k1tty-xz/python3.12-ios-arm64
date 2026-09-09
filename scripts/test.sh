@@ -14,6 +14,9 @@ fi
 VERIFY="$(mktemp -d "${TMPDIR:-/tmp}/python-ios-test.XXXXXX")"
 trap 'rm -rf "$VERIFY"' EXIT
 dpkg-deb --extract "$PACKAGE" "$VERIFY"
+CONTROL="$VERIFY/control"
+mkdir "$CONTROL"
+dpkg-deb --control "$PACKAGE" "$CONTROL"
 
 PREFIX="$VERIFY/usr/local"
 LIB_DIR="$PREFIX/lib/python$PYTHON_VERSION"
@@ -28,8 +31,8 @@ test "$(readlink "$PREFIX/bin/pip3")" = "pip$PYTHON_VERSION"
 test -f "$LIB_DIR/encodings/__init__.py"
 test -f "$LIB_DIR/os.py"
 test -f "$LIB_DIR/site-packages/pip/__main__.py"
-test -f "$VERIFY/DEBIAN/postinst"
-sh -n "$VERIFY/DEBIAN/postinst"
+test -f "$CONTROL/postinst"
+sh -n "$CONTROL/postinst"
 test -z "$(find "$LIB_DIR" -type d -name __pycache__ -print -quit)"
 grep -Fq '_can_fork_exec = sys.platform not in {"emscripten", "wasi", "tvos", "watchos"}' \
     "$LIB_DIR/subprocess.py"
