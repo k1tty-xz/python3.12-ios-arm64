@@ -1,4 +1,4 @@
-name: Build CPython and Frida for rootful iOS 14.8
+name: Build CPython for rootful iOS 14.8
 
 on:
   workflow_dispatch:
@@ -7,9 +7,6 @@ on:
       - '.github/workflows/build.yml'
       - 'CPYTHON_VERSION'
       - 'CPYTHON_SHA256'
-      - 'FRIDA_VERSION'
-      - 'FRIDA_DEPS_VERSION'
-      - 'FRIDA_TOOLS_VERSION'
       - 'packaging/**'
       - 'scripts/**'
 
@@ -40,13 +37,10 @@ jobs:
       - name: Build CPython arm64 package
         run: ./scripts/build.sh
 
-      - name: Build Frida arm64 package
-        run: ./scripts/build-frida.sh
-
-      - name: Upload rootful Debian packages
+      - name: Upload rootful Debian package
         uses: actions/upload-artifact@v7
         with:
           name: python-ios-rootful-${{ github.sha }}
-          path: ${{ runner.temp }}/python-ios-dist/*.deb
+          path: ${{ runner.temp }}/python-ios-dist/python-ios_*.deb
           if-no-files-found: error
           retention-days: 14

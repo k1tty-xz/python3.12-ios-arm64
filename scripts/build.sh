@@ -94,9 +94,6 @@ BUILD_PYTHON="$SOURCE_DIR/cross-build/build/python"
 if [ ! -f "$BUILD_PYTHON" ]; then
     BUILD_PYTHON="$BUILD_PYTHON.exe"
 fi
-printf '%s\n' "$BUILD_PYTHON" > "$OUTPUT_DIR/.build-python"
-printf '%s\n' "$SOURCE_DIR/Lib" > "$OUTPUT_DIR/.build-python-lib"
-printf '%s\n' "$PRODUCT/Python.framework" > "$OUTPUT_DIR/.python-framework"
 PIP_WHEEL=("$SOURCE_DIR"/Lib/ensurepip/_bundled/pip-*.whl)
 PYTHONPATH="${PIP_WHEEL[0]}" "$BUILD_PYTHON" -m pip --isolated install \
     --no-index --no-deps --ignore-installed --no-compile \
@@ -115,6 +112,7 @@ install -m 755 "$ROOT_DIR/packaging/postinst" "$PKG_ROOT/DEBIAN/postinst"
 # Validate and sign every shipped native binary, including all extensions.
 while IFS= read -r -d '' native; do
     lipo "$native" -verify_arch arm64
+    xcrun --sdk iphoneos strip -x "$native"
     codesign -f -s - --timestamp=none "$native"
     codesign --verify "$native"
 done < <(find "$PREFIX" -type f \( -name '*.so' -o -name Python -o -name "python$PYTHON_VERSION" \) -print0)
@@ -131,6 +129,7 @@ test -x "$PREFIX/bin/pip$PYTHON_VERSION"
 test -f "$LIB_DIR/encodings/__init__.py"
 test -f "$LIB_DIR/os.py"
 test -f "$LIB_DIR/site-packages/pip/__main__.py"
+test -z "$(find "$LIB_DIR" -type d -name __pycache__ -print -quit)"
 for module in _ssl _hashlib _ctypes _sqlite3 _bz2 _lzma _decimal _zstd _posixsubprocess zlib; do
     extensions=("$LIB_DIR/lib-dynload/$module".*.so)
     test -f "${extensions[0]}"
