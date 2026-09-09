@@ -1,5 +1,5 @@
 Package: com.python.ios
-Name: CPython for iOS
+Name: Python3.14
 Version: @VERSION@-1
 Architecture: iphoneos-arm
 Description: CPython @VERSION@ command-line runtime for rootful iOS
